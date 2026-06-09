@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local env / secrets
+.env
+.env.*
+!.env.example
+
+# Build/release artifacts
+*.zip
+*.tar.gz
+*.sha256
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
