@@ -7,4 +7,8 @@
 - Added stdlib-only helper script: `scripts/theta_edgecloud.py`.
 - Added setup and capability diagnostics.
 - Added on-demand list/chat and dedicated models/chat helper commands.
+- Added generic on-demand infer/status helpers with polling support.
+- Added controller catalog/deployment read helpers.
+- Live-tested on-demand service discovery, `gpt_oss_120b` chat, and `stable_diffusion_xl_turbo` image generation.
+- Documented Qwen3 capacity behavior and controller Cloudflare user-agent requirement.
 - Added roadmap and security policy.

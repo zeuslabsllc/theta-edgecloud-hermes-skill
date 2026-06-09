@@ -24,6 +24,11 @@
 - [x] Create release zip and hash.
 - [ ] Publish.
 - [ ] Install from public source and verify `skill_view` loads.
+- [x] Run live on-demand service discovery.
+- [x] Run live `gpt_oss_120b` chat.
+- [x] Run live `stable_diffusion_xl_turbo` image generation.
+- [x] Capture Qwen3 capacity behavior.
+- [x] Add controller catalog helper commands.
 
 ## v0.2 feature backlog
 

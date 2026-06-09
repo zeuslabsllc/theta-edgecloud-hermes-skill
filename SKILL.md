@@ -67,6 +67,11 @@ python scripts/theta_edgecloud.py setup
 python scripts/theta_edgecloud.py capabilities
 python scripts/theta_edgecloud.py ondemand-list-services
 python scripts/theta_edgecloud.py ondemand-chat --service qwen3 --message "Say hello"
+python scripts/theta_edgecloud.py ondemand-chat --service gpt_oss_120b --message "Say hello"
+python scripts/theta_edgecloud.py ondemand-infer --service stable_diffusion_xl_turbo --prediction predict --payload-json '{"input":{"prompt":"blue edge-cloud icon","steps":2,"strength":0.7,"guidance":0}}' --poll
+python scripts/theta_edgecloud.py controller-vm-types
+python scripts/theta_edgecloud.py controller-standard-templates --category serving
+python scripts/theta_edgecloud.py controller-list-deployments
 python scripts/theta_edgecloud.py dedicated-models
 python scripts/theta_edgecloud.py dedicated-chat --message "Say hello"
 ```
@@ -74,6 +79,13 @@ python scripts/theta_edgecloud.py dedicated-chat --message "Say hello"
 Use `--json` where available for machine-readable output.
 
 ## On-demand service guidance
+
+Live validation on 2026-06-09 confirmed:
+
+- `ondemand-list-services` returned 6 live services: `gpt_oss_120b`, `blip`, `qwen3`, `whisper`, `stable_diffusion_xl_turbo`, `llava`.
+- `gpt_oss_120b` chat succeeded through `/infer_request/chat/completions` with OpenAI-compatible JSON, including `choices`, `usage`, and a `reasoning` field in the message object.
+- `stable_diffusion_xl_turbo` image generation succeeded through generic `ondemand-infer`; a 2-step test returned an `image_url` and reported `cost_usd.output = 0.01`.
+- `qwen3` returned `409 No instances available - try again later` during live testing, so treat it as capacity-sensitive and retry later rather than marking credentials invalid.
 
 Validated aliases from the OpenClaw skill include:
 
@@ -107,6 +119,21 @@ Warm-up behavior observed in the source skill:
 - authenticated `POST /v1/chat/completions` succeeds after warm-up
 
 Operational rule: retry authenticated readiness for 1-2 minutes before declaring dedicated endpoint failure.
+
+Dedicated endpoint credentials are not the same as the project API key. The project API key can manage controller/project resources when it has permission, but `/v1/models` and `/v1/chat/completions` require a deployed dedicated endpoint URL plus endpoint auth (`THETA_INFERENCE_ENDPOINT` and `THETA_INFERENCE_AUTH_TOKEN` or basic auth). Use controller template/deployment commands to inspect or create dedicated resources; do not assume the helper can derive endpoint auth from the project API key alone.
+
+## Controller/project API guidance
+
+Read-only helper commands include:
+
+- `controller-vm-types` — public VM type catalog from `api.thetaedgecloud.com`.
+- `controller-standard-templates --category serving` — standard serving templates from `controller.thetaedgecloud.com`.
+- `controller-custom-templates` — project custom templates.
+- `controller-list-deployments` — project deployments.
+
+Controller APIs are Cloudflare-fronted. The helper sends a browser-like `User-Agent`; Python/urllib's default user-agent can receive Cloudflare `403 Error 1010` even for public catalog endpoints.
+
+If `controller-list-deployments` returns `403 {"status":"error","message":"You are not allowed to perform this action"}`, verify that `THETA_EC_API_KEY` is the actual project API key from **Account -> Projects -> Create API Key** and not just the project id.
 
 ## AI services coverage to preserve in future versions
 

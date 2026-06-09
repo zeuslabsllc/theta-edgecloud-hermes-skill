@@ -18,6 +18,14 @@ import urllib.request
 from typing import Any, Dict, Optional
 
 ONDEMAND_BASE = "https://ondemand.thetaedgecloud.com"
+CONTROLLER_BASE = "https://controller.thetaedgecloud.com"
+EDGE_API_BASE = "https://api.thetaedgecloud.com"
+
+DEFAULT_HEADERS = {
+    "Accept": "application/json, text/plain, */*",
+    # Theta controller APIs are Cloudflare-fronted and may reject Python's default urllib UA.
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+}
 
 
 def env(name: str) -> Optional[str]:
@@ -75,7 +83,7 @@ def setup(_: argparse.Namespace) -> int:
 
 def request_json(method: str, url: str, *, headers: Optional[Dict[str, str]] = None, payload: Any = None, timeout: int = 120) -> Any:
     body = None
-    req_headers = {"Accept": "application/json", **(headers or {})}
+    req_headers = {**DEFAULT_HEADERS, **(headers or {})}
     if payload is not None:
         body = json.dumps(payload).encode("utf-8")
         req_headers["Content-Type"] = "application/json"
@@ -146,6 +154,114 @@ def ondemand_chat(args: argparse.Namespace) -> int:
     return 0
 
 
+def first_infer_request(data: Any) -> Optional[Dict[str, Any]]:
+    if not isinstance(data, dict):
+        return None
+    body = data.get("body")
+    if isinstance(body, dict):
+        reqs = body.get("infer_requests")
+        if isinstance(reqs, list) and reqs and isinstance(reqs[0], dict):
+            return reqs[0]
+    return None
+
+
+def poll_ondemand_request(request_id: str, *, timeout: int, interval: int, request_timeout: int = 60) -> Any:
+    deadline = time.time() + timeout
+    last = None
+    while True:
+        data = request_json("GET", f"{ONDEMAND_BASE}/infer_request/{urllib.parse.quote(request_id)}", headers=ondemand_headers(require=True), timeout=request_timeout)
+        last = data
+        req = first_infer_request(data)
+        state = req.get("state") if req else None
+        if state in {"success", "error", "failed", "cancelled"}:
+            return data
+        if time.time() >= deadline:
+            return {"status": "timeout", "last": last}
+        time.sleep(max(1, interval))
+
+
+def ondemand_infer(args: argparse.Namespace) -> int:
+    if env("THETA_DRY_RUN") == "1" or args.dry_run:
+        json_out({"dry_run": True, "service": args.service, "prediction": args.prediction, "payload_json": args.payload_json})
+        return 0
+    try:
+        payload = json.loads(args.payload_json)
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"Invalid --payload-json: {e}")
+    params = []
+    if args.prediction:
+        params.append(("prediction", args.prediction))
+    if args.wait is not None:
+        params.append(("wait", str(args.wait)))
+    qs = f"?{urllib.parse.urlencode(params)}" if params else ""
+    data = request_json("POST", f"{ONDEMAND_BASE}/infer_request/{urllib.parse.quote(args.service)}{qs}", headers=ondemand_headers(require=True), payload=payload, timeout=args.timeout)
+    if args.poll:
+        req = first_infer_request(data)
+        request_id = req.get("id") if req else None
+        if request_id:
+            data = poll_ondemand_request(request_id, timeout=args.poll_timeout, interval=args.poll_interval, request_timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
+def ondemand_status(args: argparse.Namespace) -> int:
+    if args.poll:
+        data = poll_ondemand_request(args.request_id, timeout=args.timeout, interval=args.interval, request_timeout=args.request_timeout)
+    else:
+        data = request_json("GET", f"{ONDEMAND_BASE}/infer_request/{urllib.parse.quote(args.request_id)}", headers=ondemand_headers(require=True), timeout=args.request_timeout)
+    json_out(data)
+    return 0
+
+
+def controller_headers(require: bool = True) -> Dict[str, str]:
+    key = env("THETA_EC_API_KEY")
+    if not key and require:
+        raise SystemExit("Missing controller API key: set THETA_EC_API_KEY")
+    return {"x-api-key": key} if key else {}
+
+
+def project_id() -> str:
+    pid = env("THETA_EC_PROJECT_ID")
+    if not pid:
+        raise SystemExit("Missing THETA_EC_PROJECT_ID")
+    return pid
+
+
+def controller_url(base: str, path: str, params: Dict[str, Any]) -> str:
+    clean = {k: v for k, v in params.items() if v is not None}
+    qs = urllib.parse.urlencode(clean, doseq=True)
+    return f"{base}{path}{'?' + qs if qs else ''}"
+
+
+def controller_list_deployments(args: argparse.Namespace) -> int:
+    params: Dict[str, Any] = {"project_id": args.project_id or project_id()}
+    if args.template_name:
+        params["template_name"] = args.template_name
+    if args.not_template_name:
+        params["not_template_name"] = args.not_template_name
+    data = request_json("GET", controller_url(CONTROLLER_BASE, "/deployment/list", params), headers=controller_headers(require=True), timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
+def controller_standard_templates(args: argparse.Namespace) -> int:
+    data = request_json("GET", controller_url(CONTROLLER_BASE, "/deployment_template/list_standard_templates", {"category": args.category, "page": args.page, "number": args.number}), headers=controller_headers(require=True), timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
+def controller_custom_templates(args: argparse.Namespace) -> int:
+    data = request_json("GET", controller_url(CONTROLLER_BASE, "/deployment_template/list_custom_templates", {"project_id": args.project_id or project_id()}), headers=controller_headers(require=True), timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
+def controller_vm_types(args: argparse.Namespace) -> int:
+    data = request_json("GET", f"{EDGE_API_BASE}/resource/vm/list", headers=controller_headers(require=False), timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
 def inference_headers() -> Dict[str, str]:
     token = env("THETA_INFERENCE_AUTH_TOKEN")
     user = env("THETA_INFERENCE_AUTH_USER")
@@ -212,6 +328,50 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--json", action="store_true")
     s.set_defaults(func=ondemand_chat)
 
+
+    s = sub.add_parser("ondemand-infer")
+    s.add_argument("--service", required=True)
+    s.add_argument("--payload-json", required=True)
+    s.add_argument("--prediction")
+    s.add_argument("--wait", type=int)
+    s.add_argument("--timeout", type=int, default=120)
+    s.add_argument("--dry-run", action="store_true")
+    s.add_argument("--poll", action="store_true")
+    s.add_argument("--poll-timeout", type=int, default=180)
+    s.add_argument("--poll-interval", type=int, default=3)
+    s.set_defaults(func=ondemand_infer)
+
+    s = sub.add_parser("ondemand-status")
+    s.add_argument("request_id")
+    s.add_argument("--poll", action="store_true")
+    s.add_argument("--timeout", type=int, default=180)
+    s.add_argument("--interval", type=int, default=3)
+    s.add_argument("--request-timeout", type=int, default=60)
+    s.set_defaults(func=ondemand_status)
+
+    s = sub.add_parser("controller-vm-types")
+    s.add_argument("--timeout", type=int, default=60)
+    s.set_defaults(func=controller_vm_types)
+
+    s = sub.add_parser("controller-standard-templates")
+    s.add_argument("--category", default="serving")
+    s.add_argument("--page", type=int, default=0)
+    s.add_argument("--number", type=int, default=10)
+    s.add_argument("--timeout", type=int, default=60)
+    s.set_defaults(func=controller_standard_templates)
+
+    s = sub.add_parser("controller-custom-templates")
+    s.add_argument("--project-id")
+    s.add_argument("--timeout", type=int, default=60)
+    s.set_defaults(func=controller_custom_templates)
+
+    s = sub.add_parser("controller-list-deployments")
+    s.add_argument("--project-id")
+    s.add_argument("--template-name")
+    s.add_argument("--not-template-name", action="append")
+    s.add_argument("--timeout", type=int, default=60)
+    s.set_defaults(func=controller_list_deployments)
+
     s = sub.add_parser("dedicated-models")
     s.add_argument("--timeout", type=int, default=30)
     s.add_argument("--retries", type=int, default=6)
@@ -235,3 +395,4 @@ def main(argv: Optional[list[str]] = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

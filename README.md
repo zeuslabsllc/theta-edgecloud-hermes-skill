@@ -19,7 +19,15 @@ For public use, publish first and have users install by registry id or direct `S
 python scripts/theta_edgecloud.py setup
 python scripts/theta_edgecloud.py capabilities
 python scripts/theta_edgecloud.py ondemand-list-services
+python scripts/theta_edgecloud.py ondemand-chat --service gpt_oss_120b --message "Say hello"
+python scripts/theta_edgecloud.py ondemand-infer --service stable_diffusion_xl_turbo --prediction predict --payload-json '{"input":{"prompt":"blue edge-cloud icon","steps":2,"strength":0.7,"guidance":0}}' --poll
+python scripts/theta_edgecloud.py controller-vm-types
+python scripts/theta_edgecloud.py controller-standard-templates --category serving
 ```
+
+## Live validation notes
+
+2026-06-09 live tests confirmed on-demand service discovery, `gpt_oss_120b` chat, and `stable_diffusion_xl_turbo` image generation. Qwen3 returned a temporary capacity error (`409 No instances available`). Controller catalog APIs work with a browser-like user-agent; project deployment listing requires a valid project API key with permission.
 
 ## Publish options
 
