@@ -120,7 +120,14 @@ Warm-up behavior observed in the source skill:
 
 Operational rule: retry authenticated readiness for 1-2 minutes before declaring dedicated endpoint failure.
 
-Dedicated endpoint credentials are not the same as the project API key. The project API key can manage controller/project resources when it has permission, but `/v1/models` and `/v1/chat/completions` require a deployed dedicated endpoint URL plus endpoint auth (`THETA_INFERENCE_ENDPOINT` and `THETA_INFERENCE_AUTH_TOKEN` or basic auth). Use controller template/deployment commands to inspect or create dedicated resources; do not assume the helper can derive endpoint auth from the project API key alone.
+Dedicated endpoint credentials are not the same as the project API key. The project API key can manage controller/project resources when it has permission, including creating a disposable dedicated serving deployment. A successful disposable-deployment test path can generate temporary Basic Auth credentials (`auth_username` / `auth_password`) in the deployment create payload, then read the resulting endpoint URL and auth fields from the create/list response, call `/v1/models` and `/v1/chat/completions` with Basic Auth, and delete the deployment afterward.
+
+Correct operational model:
+
+- `THETA_INFERENCE_ENDPOINT` can be discovered from a live dedicated deployment create/list response, but it cannot be derived from only the project API key without an actual deployment.
+- `THETA_INFERENCE_AUTH_TOKEN` is optional and was not required for the successful OpenClaw validation path.
+- The successful disposable deployment path used generated `THETA_INFERENCE_AUTH_USER` / `THETA_INFERENCE_AUTH_PASS` style Basic Auth credentials.
+- Creating dedicated deployments may spend credits and requires quota/plan readiness. Treat it as a paid mutating operation.
 
 ## Controller/project API guidance
 
@@ -130,10 +137,14 @@ Read-only helper commands include:
 - `controller-standard-templates --category serving` — standard serving templates from `controller.thetaedgecloud.com`.
 - `controller-custom-templates` — project custom templates.
 - `controller-list-deployments` — project deployments.
+- `controller-create-deployment --payload-json ... --yes` — advanced mutating create wrapper; use `THETA_DRY_RUN=1` or `--dry-run` first.
+- `controller-delete-deployment --deployment-id ... --yes` — advanced delete wrapper for cleanup.
 
 Controller APIs are Cloudflare-fronted. The helper sends a browser-like `User-Agent`; Python/urllib's default user-agent can receive Cloudflare `403 Error 1010` even for public catalog endpoints.
 
 If `controller-list-deployments` returns `403 {"status":"error","message":"You are not allowed to perform this action"}`, verify that `THETA_EC_API_KEY` is the actual project API key from **Account -> Projects -> Create API Key** and not just the project id.
+
+For disposable dedicated inference validation, the recommended future helper flow is: list serving templates, choose a low-cost/quota-compatible template and VM, generate random Basic Auth username/password, create deployment with those auth fields, poll/list until endpoint is returned, retry `/v1/models` through warm-up, run one `/v1/chat/completions` request, then delete the deployment.
 
 ## AI services coverage to preserve in future versions
 

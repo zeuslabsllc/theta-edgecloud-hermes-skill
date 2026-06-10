@@ -9,6 +9,7 @@
 - Added on-demand list/chat and dedicated models/chat helper commands.
 - Added generic on-demand infer/status helpers with polling support.
 - Added controller catalog/deployment read helpers.
+- Added advanced controller create/delete wrappers gated by dry-run/`--yes`.
 - Live-tested on-demand service discovery, `gpt_oss_120b` chat, and `stable_diffusion_xl_turbo` image generation.
-- Documented Qwen3 capacity behavior and controller Cloudflare user-agent requirement.
+- Documented Qwen3 capacity behavior, controller Cloudflare user-agent requirement, and disposable dedicated deployment Basic Auth flow.
 - Added roadmap and security policy.

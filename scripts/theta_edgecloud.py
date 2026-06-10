@@ -262,6 +262,39 @@ def controller_vm_types(args: argparse.Namespace) -> int:
     return 0
 
 
+def controller_create_deployment(args: argparse.Namespace) -> int:
+    try:
+        payload = json.loads(args.payload_json)
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"Invalid --payload-json: {e}")
+    if env("THETA_DRY_RUN") == "1" or args.dry_run:
+        json_out({"dry_run": True, "would_call": "POST /deployment", "payload": payload})
+        return 0
+    if not args.yes:
+        raise SystemExit("Refusing paid/mutating deployment create without --yes or THETA_DRY_RUN=1")
+    data = request_json("POST", f"{CONTROLLER_BASE}/deployment", headers=controller_headers(require=True), payload=payload, timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
+def controller_delete_deployment(args: argparse.Namespace) -> int:
+    if env("THETA_DRY_RUN") == "1" or args.dry_run:
+        json_out({"dry_run": True, "deployment_id": args.deployment_id, "shard": args.shard, "suffix": args.suffix})
+        return 0
+    if not args.yes:
+        raise SystemExit("Refusing deployment delete without --yes or THETA_DRY_RUN=1")
+    pid = args.project_id or project_id()
+    if args.deployment_id:
+        url = controller_url(CONTROLLER_BASE, f"/deployment/base/{urllib.parse.quote(args.deployment_id)}", {"project_id": pid})
+    else:
+        if not args.shard or not args.suffix:
+            raise SystemExit("Provide either --deployment-id or both --shard and --suffix")
+        url = controller_url(CONTROLLER_BASE, f"/deployment/{urllib.parse.quote(args.shard)}/{urllib.parse.quote(args.suffix)}", {"project_id": pid})
+    data = request_json("DELETE", url, headers=controller_headers(require=True), timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
 def inference_headers() -> Dict[str, str]:
     token = env("THETA_INFERENCE_AUTH_TOKEN")
     user = env("THETA_INFERENCE_AUTH_USER")
@@ -372,6 +405,24 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--timeout", type=int, default=60)
     s.set_defaults(func=controller_list_deployments)
 
+
+    s = sub.add_parser("controller-create-deployment")
+    s.add_argument("--payload-json", required=True)
+    s.add_argument("--timeout", type=int, default=120)
+    s.add_argument("--dry-run", action="store_true")
+    s.add_argument("--yes", action="store_true", help="Required for real paid/mutating create")
+    s.set_defaults(func=controller_create_deployment)
+
+    s = sub.add_parser("controller-delete-deployment")
+    s.add_argument("--project-id")
+    s.add_argument("--deployment-id")
+    s.add_argument("--shard")
+    s.add_argument("--suffix")
+    s.add_argument("--timeout", type=int, default=120)
+    s.add_argument("--dry-run", action="store_true")
+    s.add_argument("--yes", action="store_true", help="Required for real delete")
+    s.set_defaults(func=controller_delete_deployment)
+
     s = sub.add_parser("dedicated-models")
     s.add_argument("--timeout", type=int, default=30)
     s.add_argument("--retries", type=int, default=6)
@@ -395,4 +446,5 @@ def main(argv: Optional[list[str]] = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
 

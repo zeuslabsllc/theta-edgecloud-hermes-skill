@@ -29,6 +29,8 @@ python scripts/theta_edgecloud.py controller-standard-templates --category servi
 
 2026-06-09 live tests confirmed on-demand service discovery, `gpt_oss_120b` chat, and `stable_diffusion_xl_turbo` image generation. Qwen3 returned a temporary capacity error (`409 No instances available`). Controller catalog APIs work with a browser-like user-agent; project deployment listing requires a valid project API key with permission.
 
+Dedicated inference note: a project API key can create a disposable serving deployment if quota/plan permissions allow it. That flow can generate temporary Basic Auth credentials in the deployment payload, discover the endpoint/auth from the create/list response, test `/v1/models` and `/v1/chat/completions`, then delete the deployment. `THETA_INFERENCE_AUTH_TOKEN` is not required for that Basic Auth path.
+
 ## Publish options
 
 For Hermes users, the preferred publishing path is a public GitHub repo published through the Hermes skills workflow. ClawHub can also be used for cross-agent/OpenClaw distribution.

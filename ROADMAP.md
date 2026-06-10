@@ -29,6 +29,7 @@
 - [x] Run live `stable_diffusion_xl_turbo` image generation.
 - [x] Capture Qwen3 capacity behavior.
 - [x] Add controller catalog helper commands.
+- [x] Clarify disposable dedicated deployment endpoint/auth flow from OpenClaw validation.
 
 ## v0.2 feature backlog
 
@@ -38,6 +39,7 @@
 - [ ] Port on-demand infer/status/poll/upload-url helpers.
 - [ ] Port Theta Video API helpers.
 - [ ] Add dedicated endpoint readiness retry helper with configurable window.
+- [ ] Add safe disposable dedicated deployment validation command: create with generated Basic Auth, poll readiness, test chat, cleanup.
 - [ ] Add structured examples for `qwen3`, `gpt_oss_120b`, `flux`, `step_video`, `whisper`, `llava`.
 
 ## v0.3 native integration backlog
