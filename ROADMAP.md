@@ -13,9 +13,9 @@
 
 ## Next: v0.1 release checklist
 
-- [ ] Review branding/credit wording.
-- [ ] Confirm license.
-- [ ] Confirm whether to publish on GitHub, ClawHub, or both.
+- [x] Review branding/credit wording.
+- [x] Confirm license.
+- [x] Confirm whether to publish on GitHub, ClawHub, or both.
 - [x] Add example `.env.example` with placeholder names only.
 - [x] Add smoke-test script.
 - [x] Run secret scan.
@@ -36,10 +36,12 @@
 
 ## v0.2 feature backlog
 
-- [ ] Port deployment list/create/stop/delete helpers.
-- [ ] Port balance lookup helper.
-- [ ] Port standard/custom templates listing.
-- [ ] Port on-demand infer/status/poll/upload-url helpers.
+- [x] Port deployment list/create/delete helpers.
+- [x] Port balance lookup helper.
+- [x] Port standard/custom templates listing.
+- [x] Port on-demand infer/status/poll helpers.
+- [ ] Port deployment stop/start helpers.
+- [ ] Port on-demand upload-url helper.
 - [ ] Port Theta Video API helpers.
 - [ ] Add dedicated endpoint readiness retry helper with configurable window.
 - [ ] Add safe disposable dedicated deployment validation command: create with generated Basic Auth, poll readiness, run template-appropriate probe, cleanup, and estimate balance delta.
@@ -47,7 +49,8 @@
 
 ## v0.3 native integration backlog
 
-- [ ] Decide between Hermes plugin/toolset and MCP server.
+- [x] Draft native Hermes plugin/MCP plan in `V0.2_NATIVE_PLUGIN_MCP_PLAN.md`.
+- [x] Decide between Hermes plugin/toolset and MCP server: build MCP server first, then Hermes plugin/toolset wrapper.
 - [ ] Create native schemas for core Theta operations.
 - [ ] Add check functions so tools only appear when credentials are configured.
 - [ ] Add tests for secret redaction and dry-run behavior.

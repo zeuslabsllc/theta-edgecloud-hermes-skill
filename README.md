@@ -8,10 +8,10 @@ For local development, copy the skill directory into your Hermes skills folder:
 
 ```bash
 mkdir -p ~/.hermes/skills/theta-edgecloud
-cp -R /home/hermes/theta-edgecloud-hermes-skill/* ~/.hermes/skills/theta-edgecloud/
+cp -R /path/to/theta-edgecloud-hermes-skill/. ~/.hermes/skills/theta-edgecloud/
 ```
 
-For public use, publish first and have users install by registry id or direct `SKILL.md` URL.
+For public use with the helper script, install from the GitHub release archive or clone this repository. Installing a raw `SKILL.md` URL is useful for previewing skill metadata, but it only installs that single file and not bundled support files under `scripts/`.
 
 ## Validate helper script
 
@@ -28,13 +28,17 @@ python scripts/theta_edgecloud.py controller-standard-templates --category servi
 
 ## Live validation notes
 
-2026-06-09 live tests confirmed on-demand service discovery, `gpt_oss_120b` chat, and `stable_diffusion_xl_turbo` image generation. Qwen3 returned a temporary capacity error (`409 No instances available`). Controller catalog APIs work with a browser-like user-agent; project deployment listing requires a valid project API key with permission.
+2026-06-09 live tests confirmed on-demand service discovery, `gpt_oss_120b` chat, and `stable_diffusion_xl_turbo` image generation. Latest on-demand retest confirmed `gpt_oss_120b` chat in about `1.128s`, with OpenAI-compatible usage metrics: `75` prompt tokens, `76` completion tokens, `151` total tokens, and a message `reasoning` field. Qwen3 returned a temporary capacity error (`409 No instances available`). Controller catalog APIs work with a browser-like user-agent; project deployment listing requires a valid project API key with permission.
 
 Organization balance lookup was also live-validated with `THETA_ORG_ID`; the response returns `body.balances[]` with `org_id` and numeric `balance`.
 
 Dedicated inference note: a project API key can create a disposable serving deployment if quota/plan permissions allow it. That flow can generate temporary Basic Auth credentials in the deployment payload, discover the endpoint/auth from the create/list response, test `/v1/models` and `/v1/chat/completions`, then delete the deployment. `THETA_INFERENCE_AUTH_TOKEN` is not required for that Basic Auth path.
 
 2026-06-10 disposable dedicated deployment validation succeeded with the `Grounding Dino` standard serving template on `vm_gt1`: create returned endpoint/auth/deletion handles, authenticated `/config` reached Gradio readiness, `POST /api/predict` returned a real base64 image result, and delete returned success with zero remaining deployments. `/v1/models` returned `404` for this Gradio template, so OpenAI-compatible checks should be reserved for vLLM/OpenAI-compatible templates.
+
+Follow-up OpenAI-compatible test: `gpt-oss-20b` on recommended `vm_gh200x1` created successfully but did not reach `/v1/models` readiness within 10 minutes (`404` -> repeated `502` -> repeated `404`). Cleanup succeeded with zero remaining deployments. This suggests dedicated OpenAI-compatible endpoints may need longer warm-up, different template/VM choices, or persistent always-on operation before they are practical as a Hermes model provider.
+
+Successful OpenAI-compatible test: `DeepSeek R1 / Distill-Qwen-7B` on recommended `vm_gh200x1` reached `/v1/models` after about 655.6 seconds and returned `200` from `/v1/chat/completions` with a valid response. The short smoke request took about 1.024 seconds once ready and reported 78 total tokens. Cleanup succeeded with zero remaining deployments. Cold-start cost was significant, so this is viable as a persistent/pre-warmed Hermes-compatible endpoint, not ideal for spin-up-per-chat usage.
 
 ## Publish options
 
@@ -46,10 +50,18 @@ hermes skills publish --to github --repo OWNER/REPO /home/hermes/theta-edgecloud
 
 Current Hermes CLI support for ClawHub publishing prints a manual-submit notice, so submit the release package manually at `https://clawhub.ai/submit` if ClawHub accepts this Hermes-targeted port.
 
-Users can install from the published source with:
+Users can install the full release from GitHub with:
 
 ```bash
-hermes skills install <id-or-url>
+curl -L https://github.com/zeuslabsllc/theta-edgecloud-hermes-skill/archive/refs/tags/v0.1.0.tar.gz -o theta-edgecloud-hermes-skill-v0.1.0.tar.gz
+mkdir -p ~/.hermes/skills/theta-edgecloud
+tar -xzf theta-edgecloud-hermes-skill-v0.1.0.tar.gz --strip-components=1 -C ~/.hermes/skills/theta-edgecloud
+```
+
+To preview only the `SKILL.md` metadata through Hermes:
+
+```bash
+hermes skills inspect https://raw.githubusercontent.com/zeuslabsllc/theta-edgecloud-hermes-skill/main/SKILL.md
 ```
 
 ## Release smoke test

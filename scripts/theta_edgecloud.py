@@ -27,6 +27,19 @@ DEFAULT_HEADERS = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
 }
 
+SENSITIVE_KEY_PARTS = (
+    "authorization",
+    "auth_password",
+    "api_key",
+    "apikey",
+    "bearer",
+    "key",
+    "password",
+    "registry_password",
+    "secret",
+    "token",
+)
+
 
 def env(name: str) -> Optional[str]:
     val = os.environ.get(name)
@@ -37,8 +50,32 @@ def ondemand_token() -> Optional[str]:
     return env("THETA_ONDEMAND_API_TOKEN") or env("THETA_ONDEMAND_API_KEY") or env("THETA_API_KEY")
 
 
+def is_sensitive_key(key: str) -> bool:
+    normalized = key.lower().replace("-", "_")
+    return any(part in normalized for part in SENSITIVE_KEY_PARTS)
+
+
+def redact(obj: Any, *, parent_key: str = "") -> Any:
+    """Recursively redact secret-like values before printing helper output."""
+    if is_sensitive_key(parent_key):
+        return "[REDACTED]"
+    if isinstance(obj, dict):
+        return {k: redact(v, parent_key=str(k)) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [redact(v, parent_key=parent_key) for v in obj]
+    return obj
+
+
+def redact_text(text: str) -> str:
+    try:
+        parsed = json.loads(text)
+        return json.dumps(redact(parsed), sort_keys=True)[:1000]
+    except Exception:
+        return text[:1000]
+
+
 def json_out(obj: Any) -> None:
-    print(json.dumps(obj, indent=2, sort_keys=True))
+    print(json.dumps(redact(obj), indent=2, sort_keys=True))
 
 
 def capabilities(_: argparse.Namespace) -> int:
@@ -99,7 +136,7 @@ def request_json(method: str, url: str, *, headers: Optional[Dict[str, str]] = N
                 return {"status": r.status, "text": raw}
     except urllib.error.HTTPError as e:
         text = e.read().decode("utf-8", "replace")
-        raise SystemExit(json.dumps({"error": "http_error", "status": e.code, "url": url, "body": text[:1000]}, indent=2))
+        raise SystemExit(json.dumps(redact({"error": "http_error", "status": e.code, "url": url, "body": redact_text(text)}), indent=2))
     except urllib.error.URLError as e:
         raise SystemExit(json.dumps({"error": "url_error", "url": url, "reason": str(e.reason)}, indent=2))
 
@@ -181,13 +218,13 @@ def poll_ondemand_request(request_id: str, *, timeout: int, interval: int, reque
 
 
 def ondemand_infer(args: argparse.Namespace) -> int:
-    if env("THETA_DRY_RUN") == "1" or args.dry_run:
-        json_out({"dry_run": True, "service": args.service, "prediction": args.prediction, "payload_json": args.payload_json})
-        return 0
     try:
         payload = json.loads(args.payload_json)
     except json.JSONDecodeError as e:
         raise SystemExit(f"Invalid --payload-json: {e}")
+    if env("THETA_DRY_RUN") == "1" or args.dry_run:
+        json_out({"dry_run": True, "service": args.service, "prediction": args.prediction, "payload": payload})
+        return 0
     params = []
     if args.prediction:
         params.append(("prediction", args.prediction))
@@ -287,6 +324,8 @@ def controller_create_deployment(args: argparse.Namespace) -> int:
 
 
 def controller_delete_deployment(args: argparse.Namespace) -> int:
+    if not args.deployment_id and not (args.shard and args.suffix):
+        raise SystemExit("Provide either --deployment-id or both --shard and --suffix")
     if env("THETA_DRY_RUN") == "1" or args.dry_run:
         json_out({"dry_run": True, "deployment_id": args.deployment_id, "shard": args.shard, "suffix": args.suffix})
         return 0
@@ -296,8 +335,6 @@ def controller_delete_deployment(args: argparse.Namespace) -> int:
     if args.deployment_id:
         url = controller_url(CONTROLLER_BASE, f"/deployment/base/{urllib.parse.quote(args.deployment_id)}", {"project_id": pid})
     else:
-        if not args.shard or not args.suffix:
-            raise SystemExit("Provide either --deployment-id or both --shard and --suffix")
         url = controller_url(CONTROLLER_BASE, f"/deployment/{urllib.parse.quote(args.shard)}/{urllib.parse.quote(args.suffix)}", {"project_id": pid})
     data = request_json("DELETE", url, headers=controller_headers(require=True), timeout=args.timeout)
     json_out(data)
@@ -320,14 +357,19 @@ def inference_base() -> str:
     ep = env("THETA_INFERENCE_ENDPOINT")
     if not ep:
         raise SystemExit("Missing THETA_INFERENCE_ENDPOINT")
+    parsed = urllib.parse.urlparse(ep)
+    if parsed.scheme != "https":
+        raise SystemExit("THETA_INFERENCE_ENDPOINT must be an https:// URL to avoid leaking endpoint credentials")
     return ep.rstrip("/")
 
 
 def dedicated_models(args: argparse.Namespace) -> int:
+    base = inference_base()
+    headers = inference_headers()
     retries = max(1, args.retries)
     for attempt in range(1, retries + 1):
         try:
-            data = request_json("GET", f"{inference_base()}/v1/models", headers=inference_headers(), timeout=args.timeout)
+            data = request_json("GET", f"{base}/v1/models", headers=headers, timeout=args.timeout)
             json_out(data)
             return 0
         except SystemExit as e:

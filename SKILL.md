@@ -84,9 +84,9 @@ Use `--json` where available for machine-readable output.
 Live validation on 2026-06-09 confirmed:
 
 - `ondemand-list-services` returned 6 live services: `gpt_oss_120b`, `blip`, `qwen3`, `whisper`, `stable_diffusion_xl_turbo`, `llava`.
-- `gpt_oss_120b` chat succeeded through `/infer_request/chat/completions` with OpenAI-compatible JSON, including `choices`, `usage`, and a `reasoning` field in the message object.
+- `gpt_oss_120b` chat succeeded through `/infer_request/chat/completions` with OpenAI-compatible JSON, including `choices`, `usage`, and a `reasoning` field in the message object. Retest latency was about `1.128s` for a short prompt; usage was `75` prompt tokens, `76` completion tokens, `151` total tokens.
 - `stable_diffusion_xl_turbo` image generation succeeded through generic `ondemand-infer`; a 2-step test returned an `image_url` and reported `cost_usd.output = 0.01`.
-- `qwen3` returned `409 No instances available - try again later` during live testing, so treat it as capacity-sensitive and retry later rather than marking credentials invalid.
+- `qwen3` returned `409 No instances available - try again later` during multiple live tests, so treat it as capacity-sensitive and retry later rather than marking credentials invalid.
 
 Validated aliases from the OpenClaw skill include:
 
@@ -154,6 +154,10 @@ Observed behavior:
 
 Budget note: this validation consumed about `6.666666` Theta EdgeCloud balance units based on pre/post balance readings (`3421.300894` -> `3414.634228`). Future disposable validation should use one run only and stop immediately after `/config` or first prediction success unless a larger budget is explicitly approved.
 
+Additional OpenAI-compatible dedicated validation attempt: `gpt-oss-20b` on recommended `vm_gh200x1` / H200 created successfully and returned endpoint + Basic Auth handles, but did not reach `/v1/models` readiness within a 10-minute polling window. Observed sequence was initial `404`, then repeated `502` for about 4 minutes, then repeated `404` until timeout. `/v1/chat/completions` was not attempted because `/v1/models` never returned `200`. Cleanup succeeded and final deployment list was empty. Balance changed from `3363.134229` to `3321.634229`, delta `41.5` balance units. Treat long H200 warm-up tests as expensive; prefer on-demand `gpt_oss_120b` for cost-conscious chat unless a persistent dedicated endpoint is needed.
+
+Successful OpenAI-compatible dedicated validation: `DeepSeek R1 / Distill-Qwen-7B` (`img_gf070dbq0kttgz1atmiatyunhdxm`, image `thetalabsofficial/vllm-theta:latest`) on recommended `vm_gh200x1` created successfully, reached `/v1/models` readiness after about 655.6 seconds, and `POST /v1/chat/completions` returned `200` in about 1.024 seconds. Model id returned: `deepseek-ai/DeepSeek-R1-Distill-Qwen-7B`. Usage for the short smoke prompt: prompt tokens `14`, completion tokens `64`, total tokens `78`. Status sequence was initial `404`, repeated `503`, repeated `500`, then `200`. Cleanup succeeded with zero remaining deployments. Balance delta was `41.5` units. This proves Theta dedicated can serve an OpenAI-compatible chat endpoint for Hermes, but cold-start time/cost make it better as a persistent endpoint or pre-warmed fallback than per-request spin-up.
+
 ## Controller/project API guidance
 
 Official Theta docs expose an AI-agent-friendly documentation index at `https://docs.thetatoken.org/llms.txt`; individual pages can be fetched as Markdown by appending `.md` (for example `https://docs.thetatoken.org/docs/use-edgecloud-api-keys-to-manage-deployments.md`). Use this for future maintenance instead of scraping rendered ReadMe HTML.
@@ -204,10 +208,13 @@ Preferred public distribution options:
    hermes skills publish --to github --repo OWNER/REPO /path/to/theta-edgecloud-hermes-skill
    ```
 2. Publish/submit to ClawHub if cross-agent distribution is desired. Current Hermes CLI support for ClawHub publishing prints a manual-submit notice, so use `https://clawhub.ai/submit` and clearly label the package as a Hermes port if ClawHub accepts it.
-3. Users can then install by URL or registry id using:
+3. Users can install the full release archive to get `SKILL.md` plus helper scripts:
    ```bash
-   hermes skills install <id-or-url>
+   curl -L https://github.com/zeuslabsllc/theta-edgecloud-hermes-skill/archive/refs/tags/v0.1.0.tar.gz -o theta-edgecloud-hermes-skill-v0.1.0.tar.gz
+   mkdir -p ~/.hermes/skills/theta-edgecloud
+   tar -xzf theta-edgecloud-hermes-skill-v0.1.0.tar.gz --strip-components=1 -C ~/.hermes/skills/theta-edgecloud
    ```
+   Raw `SKILL.md` URL install/inspect is useful for previewing skill metadata but does not install bundled support scripts.
 
 ## When to build a Hermes plugin instead
 
