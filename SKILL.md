@@ -130,6 +130,30 @@ Correct operational model:
 - The successful disposable deployment path used generated `THETA_INFERENCE_AUTH_USER` / `THETA_INFERENCE_AUTH_PASS` style Basic Auth credentials.
 - Creating dedicated deployments may spend credits and requires quota/plan readiness. Treat it as a paid mutating operation.
 
+## Disposable deployment live validation (2026-06-10)
+
+Validated project-scoped deployment permissions with a real Theta EdgeCloud Project API key and `THETA_EC_PROJECT_ID` in `prj_...` format. `controller-list-deployments` and `controller-custom-templates` returned `200` after the correct project id was supplied; a previous non-`prj_` value caused `403 You are not allowed to perform this action`.
+
+Live disposable dedicated serving deployment validation used the cheapest suitable standard serving template observed at the time:
+
+- Template: `Grounding Dino`
+- Template id: `img_qqu31asazaig666jtzp7gjd4pway`
+- Image: `thetalabsofficial/grounding-dino:1.3`
+- VM: `vm_gt1` / `G-T4_16GB-x1`
+- Container port: `7860`
+- Auth: generated `auth_username` / `auth_password` Basic Auth in the create payload
+
+Observed behavior:
+
+- `POST https://controller.thetaedgecloud.com/deployment` returned `200` with `Endpoint`, `BaseID`, `Shard`, `Suffix`, `AuthUsername`, `AuthPassword`, `EndpointStatus`, `Region`, and resource fields.
+- Endpoint warm-up sequence included `404` -> repeated `503` while the pod was Pending -> `401` endpoint status while proxy/auth gating came online -> app readiness.
+- Authenticated `/config` eventually returned `200` with Gradio config (`version: 3.41.2`).
+- `/v1/models` returned `404` for this Gradio/WebUI template; OpenAI-compatible `/v1/*` should only be expected for vLLM/OpenAI-compatible serving templates.
+- Real Gradio prediction via `POST /api/predict` succeeded with `fn_index: 0` and input shape `[image, text prompt, box threshold slider, text threshold slider]`, returning a base64 image result.
+- Cleanup with `DELETE /deployment/{Shard}/{Suffix}?project_id=...` returned `200`; post-delete deployment list returned `[]`.
+
+Budget note: this validation consumed about `6.666666` Theta EdgeCloud balance units based on pre/post balance readings (`3421.300894` -> `3414.634228`). Future disposable validation should use one run only and stop immediately after `/config` or first prediction success unless a larger budget is explicitly approved.
+
 ## Controller/project API guidance
 
 Official Theta docs expose an AI-agent-friendly documentation index at `https://docs.thetatoken.org/llms.txt`; individual pages can be fetched as Markdown by appending `.md` (for example `https://docs.thetatoken.org/docs/use-edgecloud-api-keys-to-manage-deployments.md`). Use this for future maintenance instead of scraping rendered ReadMe HTML.
@@ -192,3 +216,4 @@ A skill teaches Hermes how to use tools and scripts. A plugin/toolset is better 
 - v0.1: public Hermes skill with helper script and docs
 - v0.2: add more helper script commands for deployments/video/agents
 - v0.3: package as Hermes plugin/toolset or MCP server for native tool calls
+

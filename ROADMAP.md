@@ -32,6 +32,7 @@
 - [x] Clarify disposable dedicated deployment endpoint/auth flow from OpenClaw validation.
 - [x] Run live org balance lookup with `THETA_ORG_ID`.
 - [x] Review official Theta EdgeCloud Markdown docs and capture API payload/route notes.
+- [x] Run live disposable dedicated deployment validation with Basic Auth, readiness polling, Gradio prediction, and cleanup.
 
 ## v0.2 feature backlog
 
@@ -41,7 +42,7 @@
 - [ ] Port on-demand infer/status/poll/upload-url helpers.
 - [ ] Port Theta Video API helpers.
 - [ ] Add dedicated endpoint readiness retry helper with configurable window.
-- [ ] Add safe disposable dedicated deployment validation command: create with generated Basic Auth, poll readiness, test chat, cleanup.
+- [ ] Add safe disposable dedicated deployment validation command: create with generated Basic Auth, poll readiness, run template-appropriate probe, cleanup, and estimate balance delta.
 - [ ] Add structured examples for `qwen3`, `gpt_oss_120b`, `flux`, `step_video`, `whisper`, `llava`.
 
 ## v0.3 native integration backlog
@@ -58,3 +59,4 @@
 - [ ] Monthly check for Theta docs/API/model catalog changes.
 - [ ] Update model aliases as live catalog changes.
 - [ ] Update troubleshooting guidance for quota/capacity/auth changes.
+

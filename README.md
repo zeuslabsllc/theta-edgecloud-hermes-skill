@@ -34,6 +34,8 @@ Organization balance lookup was also live-validated with `THETA_ORG_ID`; the res
 
 Dedicated inference note: a project API key can create a disposable serving deployment if quota/plan permissions allow it. That flow can generate temporary Basic Auth credentials in the deployment payload, discover the endpoint/auth from the create/list response, test `/v1/models` and `/v1/chat/completions`, then delete the deployment. `THETA_INFERENCE_AUTH_TOKEN` is not required for that Basic Auth path.
 
+2026-06-10 disposable dedicated deployment validation succeeded with the `Grounding Dino` standard serving template on `vm_gt1`: create returned endpoint/auth/deletion handles, authenticated `/config` reached Gradio readiness, `POST /api/predict` returned a real base64 image result, and delete returned success with zero remaining deployments. `/v1/models` returned `404` for this Gradio template, so OpenAI-compatible checks should be reserved for vLLM/OpenAI-compatible templates.
+
 ## Publish options
 
 For Hermes users, the preferred publishing path is a public GitHub repo published through the Hermes skills workflow. ClawHub can also be used for cross-agent/OpenClaw distribution.
@@ -59,3 +61,4 @@ scripts/smoke_test.sh
 ## Notes
 
 This first Hermes version is a skill + helper script. A future Hermes plugin/MCP server would expose first-class Theta tool calls directly in Hermes.
+
