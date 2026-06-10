@@ -30,6 +30,7 @@
 - [x] Capture Qwen3 capacity behavior.
 - [x] Add controller catalog helper commands.
 - [x] Clarify disposable dedicated deployment endpoint/auth flow from OpenClaw validation.
+- [x] Run live org balance lookup with `THETA_ORG_ID`.
 
 ## v0.2 feature backlog
 

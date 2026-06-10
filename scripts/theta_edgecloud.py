@@ -262,6 +262,15 @@ def controller_vm_types(args: argparse.Namespace) -> int:
     return 0
 
 
+def controller_balance(args: argparse.Namespace) -> int:
+    org_id = args.org_id or env("THETA_ORG_ID")
+    if not org_id:
+        raise SystemExit("Missing org id: set THETA_ORG_ID or pass --org-id")
+    data = request_json("GET", controller_url(EDGE_API_BASE, "/balance", {"orgID": org_id}), headers=controller_headers(require=True), timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
 def controller_create_deployment(args: argparse.Namespace) -> int:
     try:
         payload = json.loads(args.payload_json)
@@ -406,6 +415,12 @@ def build_parser() -> argparse.ArgumentParser:
     s.set_defaults(func=controller_list_deployments)
 
 
+
+    s = sub.add_parser("controller-balance")
+    s.add_argument("--org-id")
+    s.add_argument("--timeout", type=int, default=60)
+    s.set_defaults(func=controller_balance)
+
     s = sub.add_parser("controller-create-deployment")
     s.add_argument("--payload-json", required=True)
     s.add_argument("--timeout", type=int, default=120)
@@ -446,5 +461,6 @@ def main(argv: Optional[list[str]] = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
 
 

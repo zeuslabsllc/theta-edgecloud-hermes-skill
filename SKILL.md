@@ -70,6 +70,7 @@ python scripts/theta_edgecloud.py ondemand-chat --service qwen3 --message "Say h
 python scripts/theta_edgecloud.py ondemand-chat --service gpt_oss_120b --message "Say hello"
 python scripts/theta_edgecloud.py ondemand-infer --service stable_diffusion_xl_turbo --prediction predict --payload-json '{"input":{"prompt":"blue edge-cloud icon","steps":2,"strength":0.7,"guidance":0}}' --poll
 python scripts/theta_edgecloud.py controller-vm-types
+python scripts/theta_edgecloud.py controller-balance
 python scripts/theta_edgecloud.py controller-standard-templates --category serving
 python scripts/theta_edgecloud.py controller-list-deployments
 python scripts/theta_edgecloud.py dedicated-models
@@ -134,6 +135,7 @@ Correct operational model:
 Read-only helper commands include:
 
 - `controller-vm-types` — public VM type catalog from `api.thetaedgecloud.com`.
+- `controller-balance` — organization balance lookup using `THETA_ORG_ID`.
 - `controller-standard-templates --category serving` — standard serving templates from `controller.thetaedgecloud.com`.
 - `controller-custom-templates` — project custom templates.
 - `controller-list-deployments` — project deployments.
@@ -145,6 +147,8 @@ Controller APIs are Cloudflare-fronted. The helper sends a browser-like `User-Ag
 If `controller-list-deployments` returns `403 {"status":"error","message":"You are not allowed to perform this action"}`, verify that `THETA_EC_API_KEY` is the actual project API key from **Account -> Projects -> Create API Key** and not just the project id.
 
 For disposable dedicated inference validation, the recommended future helper flow is: list serving templates, choose a low-cost/quota-compatible template and VM, generate random Basic Auth username/password, create deployment with those auth fields, poll/list until endpoint is returned, retry `/v1/models` through warm-up, run one `/v1/chat/completions` request, then delete the deployment.
+
+Live balance validation on 2026-06-09 succeeded for Zeus Labs org scope using `THETA_ORG_ID`: response shape was `body.balances[]` with `org_id` and numeric `balance`.
 
 ## AI services coverage to preserve in future versions
 

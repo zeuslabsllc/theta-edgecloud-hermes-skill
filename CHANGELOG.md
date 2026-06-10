@@ -10,6 +10,7 @@
 - Added generic on-demand infer/status helpers with polling support.
 - Added controller catalog/deployment read helpers.
 - Added advanced controller create/delete wrappers gated by dry-run/`--yes`.
+- Added live-tested `controller-balance` helper for `THETA_ORG_ID` org balance lookup.
 - Live-tested on-demand service discovery, `gpt_oss_120b` chat, and `stable_diffusion_xl_turbo` image generation.
 - Documented Qwen3 capacity behavior, controller Cloudflare user-agent requirement, and disposable dedicated deployment Basic Auth flow.
 - Added roadmap and security policy.

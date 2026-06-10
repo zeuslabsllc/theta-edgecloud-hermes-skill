@@ -20,6 +20,7 @@ THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py ondemand-infer \
   --payload-json '{"input":{"prompt":"Hermes Theta EdgeCloud smoke test","steps":2}}' \
   --poll >/tmp/theta_edgecloud_ondemand_infer_dry_run.json
 python3 scripts/theta_edgecloud.py controller-vm-types >/tmp/theta_edgecloud_vm_types.json
+THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py controller-balance --org-id org_placeholder >/tmp/theta_edgecloud_balance_missing_key.txt 2>&1 || true
 
 python3 - <<'PY'
 import json

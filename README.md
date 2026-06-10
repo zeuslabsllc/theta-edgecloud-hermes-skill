@@ -22,12 +22,15 @@ python scripts/theta_edgecloud.py ondemand-list-services
 python scripts/theta_edgecloud.py ondemand-chat --service gpt_oss_120b --message "Say hello"
 python scripts/theta_edgecloud.py ondemand-infer --service stable_diffusion_xl_turbo --prediction predict --payload-json '{"input":{"prompt":"blue edge-cloud icon","steps":2,"strength":0.7,"guidance":0}}' --poll
 python scripts/theta_edgecloud.py controller-vm-types
+python scripts/theta_edgecloud.py controller-balance
 python scripts/theta_edgecloud.py controller-standard-templates --category serving
 ```
 
 ## Live validation notes
 
 2026-06-09 live tests confirmed on-demand service discovery, `gpt_oss_120b` chat, and `stable_diffusion_xl_turbo` image generation. Qwen3 returned a temporary capacity error (`409 No instances available`). Controller catalog APIs work with a browser-like user-agent; project deployment listing requires a valid project API key with permission.
+
+Organization balance lookup was also live-validated with `THETA_ORG_ID`; the response returns `body.balances[]` with `org_id` and numeric `balance`.
 
 Dedicated inference note: a project API key can create a disposable serving deployment if quota/plan permissions allow it. That flow can generate temporary Basic Auth credentials in the deployment payload, discover the endpoint/auth from the create/list response, test `/v1/models` and `/v1/chat/completions`, then delete the deployment. `THETA_INFERENCE_AUTH_TOKEN` is not required for that Basic Auth path.
 
