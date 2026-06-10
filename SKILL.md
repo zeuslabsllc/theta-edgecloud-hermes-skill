@@ -132,6 +132,8 @@ Correct operational model:
 
 ## Controller/project API guidance
 
+Official Theta docs expose an AI-agent-friendly documentation index at `https://docs.thetatoken.org/llms.txt`; individual pages can be fetched as Markdown by appending `.md` (for example `https://docs.thetatoken.org/docs/use-edgecloud-api-keys-to-manage-deployments.md`). Use this for future maintenance instead of scraping rendered ReadMe HTML.
+
 Read-only helper commands include:
 
 - `controller-vm-types` — public VM type catalog from `api.thetaedgecloud.com`.
@@ -147,6 +149,10 @@ Controller APIs are Cloudflare-fronted. The helper sends a browser-like `User-Ag
 If `controller-list-deployments` returns `403 {"status":"error","message":"You are not allowed to perform this action"}`, verify that `THETA_EC_API_KEY` is the actual project API key from **Account -> Projects -> Create API Key** and not just the project id.
 
 For disposable dedicated inference validation, the recommended future helper flow is: list serving templates, choose a low-cost/quota-compatible template and VM, generate random Basic Auth username/password, create deployment with those auth fields, poll/list until endpoint is returned, retry `/v1/models` through warm-up, run one `/v1/chat/completions` request, then delete the deployment.
+
+Official deployment-create payload fields include `project_id`, `deployment_template_id`, `container_image`, `vm_id`, `min_replicas`, `max_replicas`, `env_vars`, `annotations`, `auth_username`, `auth_password`, `registry_username`, `registry_password`, and Jupyter-only `password`. Successful create/list responses include `Endpoint`, `Shard`, `Suffix`, `BaseID`, `AuthUsername`, `AuthPassword`, `EndpointStatus`, `Region`, and other operational fields.
+
+Official docs show deployment stop/start/delete endpoints using plural `/deployments/...`, while the live OpenClaw runtime uses singular `/deployment/...`; keep both in mind if a route returns 404/405 during future testing.
 
 Live balance validation on 2026-06-09 succeeded for Zeus Labs org scope using `THETA_ORG_ID`: response shape was `body.balances[]` with `org_id` and numeric `balance`.
 

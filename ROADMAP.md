@@ -31,6 +31,7 @@
 - [x] Add controller catalog helper commands.
 - [x] Clarify disposable dedicated deployment endpoint/auth flow from OpenClaw validation.
 - [x] Run live org balance lookup with `THETA_ORG_ID`.
+- [x] Review official Theta EdgeCloud Markdown docs and capture API payload/route notes.
 
 ## v0.2 feature backlog
 
