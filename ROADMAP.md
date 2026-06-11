@@ -10,6 +10,7 @@
 - [ ] Decide public repo/registry destination.
 - [ ] Publish v0.1.
 - [ ] Test install from published source in a clean Hermes profile.
+- [x] Revise v0.2 direction around Theta's official `@thetalabs/on-demand-api-mcp` server.
 
 ## Next: v0.1 release checklist
 
@@ -36,6 +37,11 @@
 
 ## v0.2 feature backlog
 
+- [x] Document Theta's official on-demand MCP server as the preferred on-demand integration path.
+- [x] Add Hermes MCP config example for `@thetalabs/on-demand-api-mcp`.
+- [x] Add official MCP prerequisite validator script.
+- [ ] Test official Theta MCP server discovery inside Hermes with a real token.
+- [ ] Document `hermes mcp add/test/list` flow after live validation.
 - [x] Port deployment list/create/delete helpers.
 - [x] Port balance lookup helper.
 - [x] Port standard/custom templates listing.
@@ -50,7 +56,7 @@
 ## v0.3 native integration backlog
 
 - [x] Draft native Hermes plugin/MCP plan in `V0.2_NATIVE_PLUGIN_MCP_PLAN.md`.
-- [x] Decide between Hermes plugin/toolset and MCP server: build MCP server first, then Hermes plugin/toolset wrapper.
+- [x] Decide between Hermes plugin/toolset and MCP server: use Theta's official MCP server for on-demand APIs first, then build Hermes/controller/dedicated endpoint extensions.
 - [ ] Create native schemas for core Theta operations.
 - [ ] Add check functions so tools only appear when credentials are configured.
 - [ ] Add tests for secret redaction and dry-run behavior.

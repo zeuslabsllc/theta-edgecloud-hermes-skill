@@ -1,0 +1,17 @@
+# Hermes MCP config example for Theta's official On-Demand API MCP server.
+# Copy the mcp_servers block into ~/.hermes/config.yaml.
+# Store the real token securely; do not commit real tokens.
+
+mcp_servers:
+  theta_ondemand:
+    command: "npx"
+    args: ["-y", "@thetalabs/on-demand-api-mcp"]
+    env:
+      # Theta official MCP server expects THETA_API_KEY.
+      # Use your Theta On-Demand access token here.
+      THETA_API_KEY: "REPLACE_WITH_THETA_ONDEMAND_ACCESS_TOKEN"
+    timeout: 180
+    connect_timeout: 60
+    # Optional hardening for untrusted/externally maintained MCP servers.
+    sampling:
+      enabled: false

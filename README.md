@@ -26,6 +26,31 @@ python scripts/theta_edgecloud.py controller-balance
 python scripts/theta_edgecloud.py controller-standard-templates --category serving
 ```
 
+## v0.2 direction: official Theta MCP + Hermes extensions
+
+Theta Labs publishes an official MCP server for Theta EdgeCloud On-Demand Model APIs: `@thetalabs/on-demand-api-mcp`.
+
+This repo's v0.2 direction is to use that official MCP server for on-demand inference, then keep this Hermes skill/helper focused on Hermes setup, safety, controller APIs, dedicated endpoint workflows, and deployment lifecycle tooling.
+
+Validate local prerequisites for the official MCP server:
+
+```bash
+scripts/validate_official_mcp.sh
+```
+
+Example Hermes MCP config is provided at:
+
+```text
+references/hermes-theta-official-mcp-config.yaml
+```
+
+After adding config and token, restart Hermes or run `/reload-mcp`. The official tools should appear with names similar to:
+
+- `mcp_theta_ondemand_list_services`
+- `mcp_theta_ondemand_infer`
+- `mcp_theta_ondemand_get_request_status`
+- `mcp_theta_ondemand_get_upload_url`
+
 ## Live validation notes
 
 2026-06-09 live tests confirmed on-demand service discovery, `gpt_oss_120b` chat, and `stable_diffusion_xl_turbo` image generation. Latest on-demand retest confirmed `gpt_oss_120b` chat in about `1.128s`, with OpenAI-compatible usage metrics: `75` prompt tokens, `76` completion tokens, `151` total tokens, and a message `reasoning` field. Qwen3 returned a temporary capacity error (`409 No instances available`). Controller catalog APIs work with a browser-like user-agent; project deployment listing requires a valid project API key with permission.
@@ -72,5 +97,5 @@ scripts/smoke_test.sh
 
 ## Notes
 
-This first Hermes version is a skill + helper script. A future Hermes plugin/MCP server would expose first-class Theta tool calls directly in Hermes.
+This first Hermes version is a skill + helper script. v0.2 should integrate Theta's official MCP server for on-demand inference and extend it with Hermes-specific controller/dedicated endpoint workflows.
 

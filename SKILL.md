@@ -79,6 +79,29 @@ python scripts/theta_edgecloud.py dedicated-chat --message "Say hello"
 
 Use `--json` where available for machine-readable output.
 
+## Official Theta MCP server
+
+Theta Labs publishes an official MCP server for Theta EdgeCloud On-Demand Model APIs: `@thetalabs/on-demand-api-mcp` (`https://github.com/thetalabs/on-demand-api-mcp`). Prefer this official MCP server for generic on-demand model access instead of duplicating those tools here.
+
+Hermes config example:
+
+```yaml
+mcp_servers:
+  theta_ondemand:
+    command: "npx"
+    args: ["-y", "@thetalabs/on-demand-api-mcp"]
+    env:
+      THETA_API_KEY: "REPLACE_WITH_THETA_ONDEMAND_ACCESS_TOKEN"
+    timeout: 180
+    connect_timeout: 60
+    sampling:
+      enabled: false
+```
+
+After adding config, restart Hermes or run `/reload-mcp`. Expected Hermes tool names use the configured server prefix, for example `mcp_theta_ondemand_list_services`, `mcp_theta_ondemand_infer`, `mcp_theta_ondemand_get_request_status`, and `mcp_theta_ondemand_get_upload_url`.
+
+This skill remains useful for Hermes-specific setup guidance, safety practices, controller/project APIs, balance checks, dedicated OpenAI-compatible endpoints, and disposable deployment validation.
+
 ## On-demand service guidance
 
 Live validation on 2026-06-09 confirmed:
