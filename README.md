@@ -55,6 +55,8 @@ After adding config and token, restart Hermes or run `/reload-mcp`. The official
 - `mcp_theta_ondemand_get_request_status`
 - `mcp_theta_ondemand_get_upload_url`
 
+For `gpt_oss_120b` via official MCP, include `stream: false` inside the `input` object to force JSON output instead of SSE streaming.
+
 ## Live validation notes
 
 2026-06-09 live tests confirmed on-demand service discovery, `gpt_oss_120b` chat, and `stable_diffusion_xl_turbo` image generation. Latest on-demand retest confirmed `gpt_oss_120b` chat in about `1.128s`, with OpenAI-compatible usage metrics: `75` prompt tokens, `76` completion tokens, `151` total tokens, and a message `reasoning` field. Qwen3 returned a temporary capacity error (`409 No instances available`). Controller catalog APIs work with a browser-like user-agent; project deployment listing requires a valid project API key with permission.

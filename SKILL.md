@@ -102,6 +102,21 @@ mcp_servers:
 
 After adding config, restart Hermes or run `/reload-mcp`. Expected Hermes tool names use the configured server prefix, for example `mcp_theta_ondemand_list_services`, `mcp_theta_ondemand_infer`, `mcp_theta_ondemand_get_request_status`, and `mcp_theta_ondemand_get_upload_url`.
 
+For `gpt_oss_120b` through the official MCP `infer` tool, include `stream: false` inside `input` to avoid SSE/JSON parse errors:
+
+```json
+{
+  "service": "gpt_oss_120b",
+  "input": {
+    "messages": [{"role": "user", "content": "Say hello"}],
+    "max_tokens": 64,
+    "temperature": 0.3,
+    "stream": false
+  },
+  "wait": 60
+}
+```
+
 This skill remains useful for Hermes-specific setup guidance, safety practices, controller/project APIs, balance checks, dedicated OpenAI-compatible endpoints, and disposable deployment validation.
 
 Supporting files:

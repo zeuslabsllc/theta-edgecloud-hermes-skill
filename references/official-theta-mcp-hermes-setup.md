@@ -3,7 +3,7 @@
 Theta Labs publishes the official on-demand MCP server at:
 
 - npm: `@thetalabs/on-demand-api-mcp`
-- GitHub listed in npm metadata: `https://github.com/thetalabs/on-demand-api-mcp` (returned 404 during validation, so npm package tarball inspection was used instead)
+- GitHub: `https://github.com/thetatoken/on-demand-api-mcp`
 
 This server should be the default v0.2 path for Theta on-demand model access in Hermes. This repository adds Hermes-specific setup docs, validation, safety guidance, and controller/dedicated endpoint workflows around it.
 
@@ -71,12 +71,27 @@ Validated with a real Theta On-Demand token:
 
 Observed inference behavior during validation:
 
-- `gpt_oss_120b` through the official MCP `infer` tool returned a parse error: `Unexpected token 'd', "data: {"id"... is not valid JSON`. This appears consistent with the service returning SSE-style `data:` chunks while the MCP server expects JSON.
-- `qwen3` through the official MCP `infer` tool returned Theta capacity error `409 No instances available - try again later`, matching earlier helper-script observations.
-- The exact Theta dashboard example shape was tested: `infer(service="qwen3", input={messages: [...], max_tokens: 512, temperature: 0.3})`. This did not change the `gpt_oss_120b` SSE parse error and `qwen3` remained capacity-blocked during the test window.
-- Package tarball inspection of `@thetalabs/on-demand-api-mcp@0.1.7` showed `dist/api/client.js` uses `await response.json()` for all successful responses. That likely explains the `gpt_oss_120b` failure when the API returns SSE-style `data:` output.
+- `gpt_oss_120b` through the official MCP `infer` tool returns a parse error if `stream` is omitted or placed at the top level: `Unexpected token 'd', "data: {"id"... is not valid JSON`. This happens because the service returns SSE-style `data:` chunks and the MCP server expects JSON.
+- Workaround confirmed: include `stream: false` inside the `input` object. Example:
 
-For now, keep this repo's direct helper path for validated `gpt_oss_120b` on-demand chat until the official MCP inference path is confirmed/fixed.
+  ```json
+  {
+    "service": "gpt_oss_120b",
+    "input": {
+      "messages": [{"role": "user", "content": "Reply exactly: Theta MCP OK"}],
+      "max_tokens": 64,
+      "temperature": 0.3,
+      "stream": false
+    },
+    "wait": 60
+  }
+  ```
+
+  This returned a successful MCP result with `{"message": "MCP stream false OK"}` during validation.
+- `qwen3` through the official MCP `infer` tool returned Theta capacity error `409 No instances available - try again later`, matching earlier helper-script observations.
+- Direct API testing also confirmed two viable lower-level paths: parse the SSE `data:` stream manually, or use `/infer_request/chat/completions` with `stream: false`. For the official MCP server, the clean user-level fix is `input.stream: false`.
+
+For now, recommend `input.stream: false` for `gpt_oss_120b` through official MCP. Keep this repo's direct helper path as a fallback when richer OpenAI-compatible fields or raw usage metrics are needed.
 
 ## Reload / test
 
