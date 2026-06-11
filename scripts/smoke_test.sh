@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+export PYTHONDONTWRITEBYTECODE=1
 
 cd "$(dirname "$0")/.."
 
@@ -79,3 +80,5 @@ for leaked in ['supersecret', 'regsecret', 'toksecret', 'validatorsecret']:
         raise SystemExit(f'secret leaked in dry-run output: {leaked}')
 print('Smoke test passed: syntax, setup, capabilities, dry-runs, negative validation, redaction, controller VM catalog')
 PY
+
+rm -rf scripts/__pycache__
