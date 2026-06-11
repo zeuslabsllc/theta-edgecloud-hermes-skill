@@ -13,6 +13,8 @@ This server should be the default v0.2 path for Theta on-demand model access in 
 - `npx`
 - Theta On-Demand access token
 
+Token note: the same Theta On-Demand token used by this repo's helper as `THETA_ONDEMAND_API_TOKEN` / `THETA_ONDEMAND_API_KEY` can be passed to Theta's official MCP server as `THETA_API_KEY`.
+
 Validate local package prerequisites:
 
 ```bash
@@ -56,6 +58,23 @@ mcp_servers:
 ```
 
 Security note: Hermes passes only a filtered baseline environment to stdio MCP subprocesses plus values explicitly listed under `env`. Do not commit real tokens.
+
+If you already store the token as `THETA_ONDEMAND_API_TOKEN`, copy that same value into the MCP server's `THETA_API_KEY` env entry.
+
+## Live validation notes
+
+Validated with a real Theta On-Demand token:
+
+- Hermes could launch the official MCP server.
+- `tools/list` discovered 4 tools.
+- `list_services` succeeded and included `gpt_oss_120b` and `qwen3`.
+
+Observed inference behavior during validation:
+
+- `gpt_oss_120b` through the official MCP `infer` tool returned a parse error: `Unexpected token 'd', "data: {"id"... is not valid JSON`. This appears consistent with the service returning SSE-style `data:` chunks while the MCP server expects JSON.
+- `qwen3` through the official MCP `infer` tool returned Theta capacity error `409 No instances available - try again later`, matching earlier helper-script observations.
+
+For now, keep this repo's direct helper path for validated `gpt_oss_120b` on-demand chat until the official MCP inference path is confirmed/fixed.
 
 ## Reload / test
 

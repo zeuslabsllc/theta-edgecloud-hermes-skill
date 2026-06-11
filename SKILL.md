@@ -33,6 +33,7 @@ Credentials are command-scoped. Do **not** ask users to configure every variable
   - `THETA_ORG_ID`
 - On-demand inference/media commands:
   - `THETA_ONDEMAND_API_TOKEN` or `THETA_ONDEMAND_API_KEY` or `THETA_API_KEY`
+  - Theta's official MCP server expects this same token value under `THETA_API_KEY`.
 - Dedicated OpenAI-compatible inference endpoint:
   - `THETA_INFERENCE_ENDPOINT`
   - either `THETA_INFERENCE_AUTH_TOKEN`

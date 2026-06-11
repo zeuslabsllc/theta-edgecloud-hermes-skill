@@ -8,7 +8,8 @@ mcp_servers:
     args: ["-y", "@thetalabs/on-demand-api-mcp"]
     env:
       # Theta official MCP server expects THETA_API_KEY.
-      # Use your Theta On-Demand access token here.
+      # Use the same Theta On-Demand token you may already use as
+      # THETA_ONDEMAND_API_TOKEN / THETA_ONDEMAND_API_KEY.
       THETA_API_KEY: "REPLACE_WITH_THETA_ONDEMAND_ACCESS_TOKEN"
     timeout: 180
     connect_timeout: 60
