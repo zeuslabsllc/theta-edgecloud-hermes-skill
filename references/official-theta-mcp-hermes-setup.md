@@ -3,7 +3,7 @@
 Theta Labs publishes the official on-demand MCP server at:
 
 - npm: `@thetalabs/on-demand-api-mcp`
-- GitHub: `https://github.com/thetalabs/on-demand-api-mcp`
+- GitHub listed in npm metadata: `https://github.com/thetalabs/on-demand-api-mcp` (returned 404 during validation, so npm package tarball inspection was used instead)
 
 This server should be the default v0.2 path for Theta on-demand model access in Hermes. This repository adds Hermes-specific setup docs, validation, safety guidance, and controller/dedicated endpoint workflows around it.
 
@@ -48,7 +48,7 @@ into `~/.hermes/config.yaml`, then replace the placeholder token:
 mcp_servers:
   theta_ondemand:
     command: "npx"
-    args: ["-y", "@thetalabs/on-demand-api-mcp"]
+    args: ["@thetalabs/on-demand-api-mcp"]
     env:
       THETA_API_KEY: "REPLACE_WITH_THETA_ONDEMAND_ACCESS_TOKEN"
     timeout: 180
@@ -73,6 +73,8 @@ Observed inference behavior during validation:
 
 - `gpt_oss_120b` through the official MCP `infer` tool returned a parse error: `Unexpected token 'd', "data: {"id"... is not valid JSON`. This appears consistent with the service returning SSE-style `data:` chunks while the MCP server expects JSON.
 - `qwen3` through the official MCP `infer` tool returned Theta capacity error `409 No instances available - try again later`, matching earlier helper-script observations.
+- The exact Theta dashboard example shape was tested: `infer(service="qwen3", input={messages: [...], max_tokens: 512, temperature: 0.3})`. This did not change the `gpt_oss_120b` SSE parse error and `qwen3` remained capacity-blocked during the test window.
+- Package tarball inspection of `@thetalabs/on-demand-api-mcp@0.1.7` showed `dist/api/client.js` uses `await response.json()` for all successful responses. That likely explains the `gpt_oss_120b` failure when the API returns SSE-style `data:` output.
 
 For now, keep this repo's direct helper path for validated `gpt_oss_120b` on-demand chat until the official MCP inference path is confirmed/fixed.
 
@@ -100,7 +102,7 @@ Expected Hermes tool names use the server prefix:
 
 ## Current Hermes CLI note
 
-Manual `config.yaml` editing is the most reliable setup path for this package because `hermes mcp add --args` can be awkward with args beginning with `-`, such as `npx -y`. The config file form above has been discovery-tested.
+Manual `config.yaml` editing is the most reliable setup path for this package. The Theta dashboard example uses `args: ["@thetalabs/on-demand-api-mcp"]`; this avoids CLI parsing issues with args beginning with `-`, such as `npx -y`. The config file form above has been discovery-tested.
 
 ## What this repo still handles
 

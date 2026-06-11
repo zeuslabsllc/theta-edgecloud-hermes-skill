@@ -20,7 +20,7 @@ cat > "$tmp_home/config.yaml" <<'YAML'
 mcp_servers:
   theta_ondemand:
     command: "npx"
-    args: ["-y", "@thetalabs/on-demand-api-mcp"]
+    args: ["@thetalabs/on-demand-api-mcp"]
     env:
       THETA_API_KEY: "PLACEHOLDER_TOKEN_FOR_DISCOVERY_ONLY"
     timeout: 180

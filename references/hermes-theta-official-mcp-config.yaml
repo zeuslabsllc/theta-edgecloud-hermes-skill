@@ -5,7 +5,7 @@
 mcp_servers:
   theta_ondemand:
     command: "npx"
-    args: ["-y", "@thetalabs/on-demand-api-mcp"]
+    args: ["@thetalabs/on-demand-api-mcp"]
     env:
       # Theta official MCP server expects THETA_API_KEY.
       # Use the same Theta On-Demand token you may already use as

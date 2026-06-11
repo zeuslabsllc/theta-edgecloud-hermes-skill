@@ -83,7 +83,7 @@ Use `--json` where available for machine-readable output.
 
 ## Official Theta MCP server
 
-Theta Labs publishes an official MCP server for Theta EdgeCloud On-Demand Model APIs: `@thetalabs/on-demand-api-mcp` (`https://github.com/thetalabs/on-demand-api-mcp`). Prefer this official MCP server for generic on-demand model access instead of duplicating those tools here.
+Theta Labs publishes an official MCP server for Theta EdgeCloud On-Demand Model APIs: `@thetalabs/on-demand-api-mcp`. Prefer this official MCP server for generic on-demand model access where it is validated instead of duplicating those tools here.
 
 Hermes config example:
 
@@ -91,7 +91,7 @@ Hermes config example:
 mcp_servers:
   theta_ondemand:
     command: "npx"
-    args: ["-y", "@thetalabs/on-demand-api-mcp"]
+    args: ["@thetalabs/on-demand-api-mcp"]
     env:
       THETA_API_KEY: "REPLACE_WITH_THETA_ONDEMAND_ACCESS_TOKEN"
     timeout: 180
