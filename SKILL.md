@@ -74,7 +74,10 @@ python scripts/theta_edgecloud.py controller-vm-types
 python scripts/theta_edgecloud.py controller-balance
 python scripts/theta_edgecloud.py controller-standard-templates --category serving
 python scripts/theta_edgecloud.py controller-list-deployments
-python scripts/theta_edgecloud.py controller-validate-disposable --dry-run --probe openai --payload-json '{"project_id":"prj_demo","deployment_template_id":"img_demo"}'
+python scripts/theta_edgecloud.py controller-lifecycle-deployment --action stop --deployment-id base_demo --project-id prj_demo --dry-run
+python scripts/theta_edgecloud.py controller-validate-disposable --dry-run --org-id org_demo --probe openai --payload-json '{"project_id":"prj_demo","deployment_template_id":"img_demo"}'
+python scripts/theta_edgecloud.py ondemand-upload-url --service whisper --input-field audio_filename --dry-run
+python scripts/theta_edgecloud.py dedicated-ready --probe openai
 python scripts/theta_edgecloud.py dedicated-models
 python scripts/theta_edgecloud.py dedicated-chat --message "Say hello"
 ```
@@ -123,6 +126,7 @@ Supporting files:
 
 - `references/hermes-theta-official-mcp-config.yaml` — copy/paste Hermes config example.
 - `references/official-theta-mcp-hermes-setup.md` — full setup and troubleshooting notes.
+- `references/structured-examples.md` — copy/paste examples for `gpt_oss_120b`, `qwen3`, image/audio/video, LLaVA, and dedicated validators.
 - `scripts/validate_official_mcp.sh` — checks Node/npm/package metadata.
 - `scripts/test_official_mcp_hermes.sh` — verifies Hermes can discover the 4 official MCP tools in a temporary profile.
 
@@ -225,7 +229,13 @@ If `controller-list-deployments` returns `403 {"status":"error","message":"You a
 
 For disposable dedicated inference validation, the recommended future helper flow is: list serving templates, choose a low-cost/quota-compatible template and VM, generate random Basic Auth username/password, create deployment with those auth fields, poll/list until endpoint is returned, retry `/v1/models` through warm-up, run one `/v1/chat/completions` request, then delete the deployment.
 
-The helper includes `controller-validate-disposable` for this workflow. It defaults to dry-run-safe behavior through `THETA_DRY_RUN=1` or `--dry-run`, injects generated Basic Auth if missing, redacts auth fields in output, refuses real paid/mutating execution unless `--yes` is passed, polls either `openai` (`/v1/models`) or `gradio` (`/config`) readiness, and attempts deletion in cleanup after a real create.
+The helper includes `controller-validate-disposable` for this workflow. It defaults to dry-run-safe behavior through `THETA_DRY_RUN=1` or `--dry-run`, injects generated Basic Auth if missing, redacts auth fields in output, refuses real paid/mutating execution unless `--yes` is passed, polls either `openai` (`/v1/models`) or `gradio` (`/config`) readiness, attempts deletion in cleanup after a real create, verifies cleanup from deployment listing when possible, and reports pre/post org balance plus numeric delta when `--org-id` or `THETA_ORG_ID` is configured.
+
+Additional v0.2 helper coverage:
+
+- `controller-lifecycle-deployment --action start|stop` performs guarded start/stop calls. Use dry-run first; the helper can try singular `/deployment/...` and plural `/deployments/...` route styles because Theta docs/runtime examples have used both.
+- `ondemand-upload-url` calls the on-demand presigned upload URL API for file inputs such as Whisper audio.
+- `dedicated-ready` provides a dedicated endpoint readiness probe with configurable timeout/interval for OpenAI-style `/v1/models` or Gradio `/config` endpoints.
 
 Official deployment-create payload fields include `project_id`, `deployment_template_id`, `container_image`, `vm_id`, `min_replicas`, `max_replicas`, `env_vars`, `annotations`, `auth_username`, `auth_password`, `registry_username`, `registry_password`, and Jupyter-only `password`. Successful create/list responses include `Endpoint`, `Shard`, `Suffix`, `BaseID`, `AuthUsername`, `AuthPassword`, `EndpointStatus`, `Region`, and other operational fields.
 

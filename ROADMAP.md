@@ -47,13 +47,13 @@
 - [x] Port balance lookup helper.
 - [x] Port standard/custom templates listing.
 - [x] Port on-demand infer/status/poll helpers.
-- [ ] Port deployment stop/start helpers.
-- [ ] Port on-demand upload-url helper.
+- [x] Port deployment stop/start helpers.
+- [x] Port on-demand upload-url helper.
 - [ ] Port Theta Video API helpers.
-- [ ] Add dedicated endpoint readiness retry helper with configurable window.
+- [x] Add dedicated endpoint readiness retry helper with configurable window.
 - [x] Add safe disposable dedicated deployment validation command: create with generated Basic Auth, poll readiness, run template-appropriate probe, and cleanup.
-- [ ] Add balance delta reporting to disposable dedicated deployment validation.
-- [ ] Add structured examples for `qwen3`, `gpt_oss_120b`, `flux`, `step_video`, `whisper`, `llava`.
+- [x] Add balance delta reporting to disposable dedicated deployment validation.
+- [x] Add structured examples for `qwen3`, `gpt_oss_120b`, `flux`, `step_video`, `whisper`, `llava`.
 
 ## v0.3 native integration backlog
 

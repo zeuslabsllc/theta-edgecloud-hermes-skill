@@ -24,7 +24,10 @@ python scripts/theta_edgecloud.py ondemand-infer --service stable_diffusion_xl_t
 python scripts/theta_edgecloud.py controller-vm-types
 python scripts/theta_edgecloud.py controller-balance
 python scripts/theta_edgecloud.py controller-standard-templates --category serving
-python scripts/theta_edgecloud.py controller-validate-disposable --dry-run --probe openai --payload-json '{"project_id":"prj_demo","deployment_template_id":"img_demo"}'
+python scripts/theta_edgecloud.py ondemand-upload-url --service whisper --input-field audio_filename --dry-run
+python scripts/theta_edgecloud.py controller-lifecycle-deployment --action stop --deployment-id base_demo --project-id prj_demo --dry-run
+python scripts/theta_edgecloud.py controller-validate-disposable --dry-run --org-id org_demo --probe openai --payload-json '{"project_id":"prj_demo","deployment_template_id":"img_demo"}'
+python scripts/theta_edgecloud.py dedicated-ready --probe openai
 ```
 
 ## v0.2 direction: official Theta MCP + Hermes extensions
@@ -47,6 +50,7 @@ references/hermes-theta-official-mcp-config.yaml
 ```
 
 Full setup notes are in `references/official-theta-mcp-hermes-setup.md`.
+Structured model/API examples are in `references/structured-examples.md`.
 
 After adding config and token, restart Hermes or run `/reload-mcp`. The official tools should appear with names similar to:
 

@@ -23,6 +23,11 @@ THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py ondemand-infer \
   --payload-json '{"input":{"prompt":"Hermes Theta EdgeCloud smoke test","steps":2}}' \
   --poll >/tmp/theta_edgecloud_ondemand_infer_dry_run.json
 
+THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py ondemand-upload-url \
+  --service whisper \
+  --input-field audio_filename \
+  >/tmp/theta_edgecloud_upload_url_dry_run.json
+
 python3 scripts/theta_edgecloud.py controller-vm-types >/tmp/theta_edgecloud_vm_types.json
 THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py controller-balance --org-id org_placeholder >/tmp/theta_edgecloud_balance_missing_key.txt 2>&1 || true
 
@@ -43,8 +48,15 @@ THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py controller-create-deployment 
 
 THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py controller-validate-disposable \
   --probe openai \
+  --org-id org_demo \
   --payload-json '{"project_id":"prj_demo","deployment_template_id":"img_demo","auth_password":"validatorsecret"}' \
   >/tmp/theta_disposable_validate_dry_run.json
+
+THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py controller-lifecycle-deployment \
+  --action stop \
+  --deployment-id base_demo \
+  --project-id prj_demo \
+  >/tmp/theta_lifecycle_dry_run.json
 
 python3 - <<'PY'
 import json
@@ -54,9 +66,11 @@ for path in [
     '/tmp/theta_edgecloud_ondemand_dry_run.json',
     '/tmp/theta_edgecloud_dedicated_dry_run.json',
     '/tmp/theta_edgecloud_ondemand_infer_dry_run.json',
+    '/tmp/theta_edgecloud_upload_url_dry_run.json',
     '/tmp/theta_edgecloud_vm_types.json',
     '/tmp/theta_create_redacted.json',
     '/tmp/theta_disposable_validate_dry_run.json',
+    '/tmp/theta_lifecycle_dry_run.json',
 ]:
     json.loads(Path(path).read_text())
 redacted = Path('/tmp/theta_create_redacted.json').read_text() + Path('/tmp/theta_disposable_validate_dry_run.json').read_text()

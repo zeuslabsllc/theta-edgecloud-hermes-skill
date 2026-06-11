@@ -252,6 +252,27 @@ def ondemand_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def ondemand_upload_url(args: argparse.Namespace) -> int:
+    input_fields = args.input_field or []
+    if args.input_fields_json:
+        try:
+            parsed = json.loads(args.input_fields_json)
+        except json.JSONDecodeError as e:
+            raise SystemExit(f"Invalid --input-fields-json: {e}")
+        if not isinstance(parsed, list) or not all(isinstance(x, str) for x in parsed):
+            raise SystemExit("--input-fields-json must be a JSON array of strings")
+        input_fields.extend(parsed)
+    if not input_fields:
+        raise SystemExit("Provide --input-field at least once or --input-fields-json")
+    payload = {"input_fields": input_fields}
+    if env("THETA_DRY_RUN") == "1" or args.dry_run:
+        json_out({"dry_run": True, "service": args.service, "would_call": f"POST /infer_request/{args.service}/input_presigned_urls", "payload": payload})
+        return 0
+    data = request_json("POST", f"{ONDEMAND_BASE}/infer_request/{urllib.parse.quote(args.service)}/input_presigned_urls", headers=ondemand_headers(require=True), payload=payload, timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
 def controller_headers(require: bool = True) -> Dict[str, str]:
     key = env("THETA_EC_API_KEY")
     if not key and require:
@@ -308,6 +329,46 @@ def controller_balance(args: argparse.Namespace) -> int:
     data = request_json("GET", controller_url(EDGE_API_BASE, "/balance", {"orgID": org_id}), headers=controller_headers(require=True), timeout=args.timeout)
     json_out(data)
     return 0
+
+
+def extract_numeric_value(obj: Any, names: set[str]) -> Optional[float]:
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            if str(key).lower() in names:
+                try:
+                    return float(value)
+                except (TypeError, ValueError):
+                    pass
+        for value in obj.values():
+            found = extract_numeric_value(value, names)
+            if found is not None:
+                return found
+    elif isinstance(obj, list):
+        for item in obj:
+            found = extract_numeric_value(item, names)
+            if found is not None:
+                return found
+    return None
+
+
+def balance_snapshot(org_id: Optional[str], timeout: int) -> Dict[str, Any]:
+    if not org_id:
+        return {"skipped": True, "reason": "missing_org_id"}
+    if not env("THETA_EC_API_KEY"):
+        return {"skipped": True, "reason": "missing_THETA_EC_API_KEY"}
+    try:
+        data = request_json("GET", controller_url(EDGE_API_BASE, "/balance", {"orgID": org_id}), headers=controller_headers(require=True), timeout=timeout)
+        value = extract_numeric_value(data, {"balance", "amount", "available", "credit", "credits", "remaining", "total"})
+        return {"skipped": False, "org_id": org_id, "value": value, "response": data}
+    except SystemExit as e:
+        return {"skipped": True, "reason": "balance_lookup_failed", "error": str(e)[:1000]}
+
+
+def balance_delta(before: Dict[str, Any], after: Dict[str, Any]) -> Dict[str, Any]:
+    result = {"before": before, "after": after, "delta": None}
+    if not before.get("skipped") and not after.get("skipped") and before.get("value") is not None and after.get("value") is not None:
+        result["delta"] = after["value"] - before["value"]
+    return result
 
 
 def controller_create_deployment(args: argparse.Namespace) -> int:
@@ -397,17 +458,22 @@ def controller_validate_disposable(args: argparse.Namespace) -> int:
     auth_pass = args.auth_password or payload.get("auth_password") or generated_password()
     payload["auth_username"] = auth_user
     payload["auth_password"] = auth_pass
+    org_id = args.org_id or env("THETA_ORG_ID")
 
     plan = {
         "dry_run": True,
         "would": [
+            "read org balance before if --org-id or THETA_ORG_ID is configured",
             "create deployment with generated Basic Auth",
             f"poll {args.probe} readiness probe",
             "run one minimal readiness/smoke check",
             "delete deployment in cleanup",
+            "verify cleanup from deployment list when a project_id is available",
+            "read org balance after and report numeric delta if parseable",
         ],
         "probe": args.probe,
         "payload": payload,
+        "org_id_configured": bool(org_id),
         "timeout_seconds": args.ready_timeout,
     }
     if env("THETA_DRY_RUN") == "1" or args.dry_run:
@@ -420,6 +486,9 @@ def controller_validate_disposable(args: argparse.Namespace) -> int:
     delete_result = None
     readiness = None
     smoke = None
+    cleanup_verification = None
+    before_balance = balance_snapshot(org_id, args.timeout)
+    return_code = 1
     try:
         created = request_json("POST", f"{CONTROLLER_BASE}/deployment", headers=controller_headers(require=True), payload=payload, timeout=args.timeout)
         endpoint = str(find_key(created, {"endpoint", "endpointurl", "url"}) or "").rstrip("/")
@@ -433,11 +502,11 @@ def controller_validate_disposable(args: argparse.Namespace) -> int:
             smoke = request_json("POST", f"{endpoint}/v1/chat/completions", headers=headers, payload=smoke_payload, timeout=args.timeout)
         return_code = 0 if readiness and readiness.get("ready") else 1
     finally:
+        base_id = find_key(created, {"baseid", "base_id", "deployment_id", "id"}) if created is not None else None
+        shard = find_key(created, {"shard"}) if created is not None else None
+        suffix = find_key(created, {"suffix"}) if created is not None else None
+        pid = payload.get("project_id") or env("THETA_EC_PROJECT_ID")
         if created is not None:
-            base_id = find_key(created, {"baseid", "base_id", "deployment_id", "id"})
-            shard = find_key(created, {"shard"})
-            suffix = find_key(created, {"suffix"})
-            pid = payload.get("project_id") or env("THETA_EC_PROJECT_ID")
             try:
                 if base_id and pid:
                     url = controller_url(CONTROLLER_BASE, f"/deployment/base/{urllib.parse.quote(str(base_id))}", {"project_id": pid})
@@ -449,7 +518,25 @@ def controller_validate_disposable(args: argparse.Namespace) -> int:
                     delete_result = {"warning": "could_not_determine_delete_handle", "has_project_id": bool(pid)}
             except SystemExit as e:
                 delete_result = {"delete_error": str(e)}
-        json_out({"create_response": created, "readiness": readiness, "smoke_response": smoke, "delete_result": delete_result})
+        if pid:
+            try:
+                listed = request_json("GET", controller_url(CONTROLLER_BASE, "/deployment", {"project_id": pid}), headers=controller_headers(require=True), timeout=args.timeout)
+                needle_values = {str(v) for v in (base_id, shard, suffix) if v not in (None, "")}
+                listed_text = json.dumps(listed)
+                cleanup_verification = {"checked": True, "project_id": pid, "deleted_handles_absent": not any(v in listed_text for v in needle_values), "handles_checked": sorted(needle_values)}
+            except SystemExit as e:
+                cleanup_verification = {"checked": False, "error": str(e)[:1000]}
+        else:
+            cleanup_verification = {"checked": False, "reason": "missing_project_id"}
+        after_balance = balance_snapshot(org_id, args.timeout)
+        json_out({
+            "create_response": created,
+            "readiness": readiness,
+            "smoke_response": smoke,
+            "delete_result": delete_result,
+            "cleanup_verification": cleanup_verification,
+            "balance": balance_delta(before_balance, after_balance),
+        })
     return return_code
 
 
@@ -490,6 +577,48 @@ def dedicated_models(args: argparse.Namespace) -> int:
             print(f"Readiness attempt {attempt}/{retries} failed; retrying in {args.sleep}s...", file=sys.stderr)
             time.sleep(args.sleep)
     return 1
+
+
+def controller_lifecycle_deployment(args: argparse.Namespace) -> int:
+    if args.action not in {"start", "stop"}:
+        raise SystemExit("--action must be start or stop")
+    if not args.deployment_id and not (args.shard and args.suffix):
+        raise SystemExit("Provide either --deployment-id or both --shard and --suffix")
+    pid = args.project_id or env("THETA_EC_PROJECT_ID")
+    if not pid and not (env("THETA_DRY_RUN") == "1" or args.dry_run):
+        pid = project_id()
+    route_style = args.route_style
+    candidate_paths = []
+    nouns = ["deployment", "deployments"] if route_style == "both" else [route_style]
+    for noun in nouns:
+        if args.deployment_id:
+            candidate_paths.append(f"/{noun}/base/{urllib.parse.quote(args.deployment_id)}/{args.action}")
+        else:
+            candidate_paths.append(f"/{noun}/{urllib.parse.quote(args.shard)}/{urllib.parse.quote(args.suffix)}/{args.action}")
+    if env("THETA_DRY_RUN") == "1" or args.dry_run:
+        json_out({"dry_run": True, "action": args.action, "method": args.method, "candidate_paths": candidate_paths, "project_id": pid})
+        return 0
+    if not args.yes:
+        raise SystemExit(f"Refusing deployment {args.action} without --yes or THETA_DRY_RUN=1")
+    errors = []
+    for path in candidate_paths:
+        url = controller_url(CONTROLLER_BASE, path, {"project_id": pid})
+        try:
+            data = request_json(args.method, url, headers=controller_headers(require=True), timeout=args.timeout)
+            json_out({"action": args.action, "route": path, "response": data})
+            return 0
+        except SystemExit as e:
+            errors.append({"route": path, "error": str(e)[:1000]})
+            if route_style != "both":
+                break
+    json_out({"error": f"deployment_{args.action}_failed", "attempts": errors})
+    return 1
+
+
+def dedicated_ready(args: argparse.Namespace) -> int:
+    readiness = wait_for_probe(inference_base(), inference_headers(), probe=args.probe, timeout=args.ready_timeout, interval=args.interval, request_timeout=args.timeout)
+    json_out(readiness)
+    return 0 if readiness.get("ready") else 1
 
 
 def dedicated_chat(args: argparse.Namespace) -> int:
@@ -545,6 +674,14 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--request-timeout", type=int, default=60)
     s.set_defaults(func=ondemand_status)
 
+    s = sub.add_parser("ondemand-upload-url")
+    s.add_argument("--service", required=True)
+    s.add_argument("--input-field", action="append", help="Input field requiring upload URL; repeatable")
+    s.add_argument("--input-fields-json", help="JSON array of input field names")
+    s.add_argument("--timeout", type=int, default=60)
+    s.add_argument("--dry-run", action="store_true")
+    s.set_defaults(func=ondemand_upload_url)
+
     s = sub.add_parser("controller-vm-types")
     s.add_argument("--timeout", type=int, default=60)
     s.set_defaults(func=controller_vm_types)
@@ -592,9 +729,23 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--yes", action="store_true", help="Required for real delete")
     s.set_defaults(func=controller_delete_deployment)
 
+    s = sub.add_parser("controller-lifecycle-deployment")
+    s.add_argument("--action", choices=["start", "stop"], required=True)
+    s.add_argument("--project-id")
+    s.add_argument("--deployment-id")
+    s.add_argument("--shard")
+    s.add_argument("--suffix")
+    s.add_argument("--route-style", choices=["deployment", "deployments", "both"], default="both")
+    s.add_argument("--method", choices=["POST", "PUT"], default="POST")
+    s.add_argument("--timeout", type=int, default=120)
+    s.add_argument("--dry-run", action="store_true")
+    s.add_argument("--yes", action="store_true", help="Required for real start/stop")
+    s.set_defaults(func=controller_lifecycle_deployment)
+
     s = sub.add_parser("controller-validate-disposable")
     s.add_argument("--payload-json", required=True)
     s.add_argument("--probe", choices=["openai", "gradio"], default="openai")
+    s.add_argument("--org-id", help="Optional org id for pre/post balance delta reporting")
     s.add_argument("--auth-username")
     s.add_argument("--auth-password")
     s.add_argument("--ready-timeout", type=int, default=900)
@@ -605,6 +756,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--dry-run", action="store_true")
     s.add_argument("--yes", action="store_true", help="Required for real paid/mutating disposable validation")
     s.set_defaults(func=controller_validate_disposable)
+
+    s = sub.add_parser("dedicated-ready")
+    s.add_argument("--probe", choices=["openai", "gradio"], default="openai")
+    s.add_argument("--ready-timeout", type=int, default=900)
+    s.add_argument("--interval", type=int, default=15)
+    s.add_argument("--timeout", type=int, default=30)
+    s.set_defaults(func=dedicated_ready)
 
     s = sub.add_parser("dedicated-models")
     s.add_argument("--timeout", type=int, default=30)
