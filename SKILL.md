@@ -73,6 +73,7 @@ python scripts/theta_edgecloud.py controller-vm-types
 python scripts/theta_edgecloud.py controller-balance
 python scripts/theta_edgecloud.py controller-standard-templates --category serving
 python scripts/theta_edgecloud.py controller-list-deployments
+python scripts/theta_edgecloud.py controller-validate-disposable --dry-run --probe openai --payload-json '{"project_id":"prj_demo","deployment_template_id":"img_demo"}'
 python scripts/theta_edgecloud.py dedicated-models
 python scripts/theta_edgecloud.py dedicated-chat --message "Say hello"
 ```
@@ -207,6 +208,8 @@ Controller APIs are Cloudflare-fronted. The helper sends a browser-like `User-Ag
 If `controller-list-deployments` returns `403 {"status":"error","message":"You are not allowed to perform this action"}`, verify that `THETA_EC_API_KEY` is the actual project API key from **Account -> Projects -> Create API Key** and not just the project id.
 
 For disposable dedicated inference validation, the recommended future helper flow is: list serving templates, choose a low-cost/quota-compatible template and VM, generate random Basic Auth username/password, create deployment with those auth fields, poll/list until endpoint is returned, retry `/v1/models` through warm-up, run one `/v1/chat/completions` request, then delete the deployment.
+
+The helper includes `controller-validate-disposable` for this workflow. It defaults to dry-run-safe behavior through `THETA_DRY_RUN=1` or `--dry-run`, injects generated Basic Auth if missing, redacts auth fields in output, refuses real paid/mutating execution unless `--yes` is passed, polls either `openai` (`/v1/models`) or `gradio` (`/config`) readiness, and attempts deletion in cleanup after a real create.
 
 Official deployment-create payload fields include `project_id`, `deployment_template_id`, `container_image`, `vm_id`, `min_replicas`, `max_replicas`, `env_vars`, `annotations`, `auth_username`, `auth_password`, `registry_username`, `registry_password`, and Jupyter-only `password`. Successful create/list responses include `Endpoint`, `Shard`, `Suffix`, `BaseID`, `AuthUsername`, `AuthPassword`, `EndpointStatus`, `Region`, and other operational fields.
 

@@ -24,6 +24,7 @@ python scripts/theta_edgecloud.py ondemand-infer --service stable_diffusion_xl_t
 python scripts/theta_edgecloud.py controller-vm-types
 python scripts/theta_edgecloud.py controller-balance
 python scripts/theta_edgecloud.py controller-standard-templates --category serving
+python scripts/theta_edgecloud.py controller-validate-disposable --dry-run --probe openai --payload-json '{"project_id":"prj_demo","deployment_template_id":"img_demo"}'
 ```
 
 ## v0.2 direction: official Theta MCP + Hermes extensions

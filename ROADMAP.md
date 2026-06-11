@@ -51,7 +51,8 @@
 - [ ] Port on-demand upload-url helper.
 - [ ] Port Theta Video API helpers.
 - [ ] Add dedicated endpoint readiness retry helper with configurable window.
-- [ ] Add safe disposable dedicated deployment validation command: create with generated Basic Auth, poll readiness, run template-appropriate probe, cleanup, and estimate balance delta.
+- [x] Add safe disposable dedicated deployment validation command: create with generated Basic Auth, poll readiness, run template-appropriate probe, and cleanup.
+- [ ] Add balance delta reporting to disposable dedicated deployment validation.
 - [ ] Add structured examples for `qwen3`, `gpt_oss_120b`, `flux`, `step_video`, `whisper`, `llava`.
 
 ## v0.3 native integration backlog

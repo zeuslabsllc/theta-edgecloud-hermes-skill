@@ -41,6 +41,11 @@ THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py controller-create-deployment 
   --payload-json '{"project_id":"prj_demo","deployment_template_id":"img_demo","auth_username":"user","auth_password":"supersecret","registry_password":"regsecret","env_vars":{"API_TOKEN":"toksecret","SAFE_VALUE":"ok"}}' \
   >/tmp/theta_create_redacted.json
 
+THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py controller-validate-disposable \
+  --probe openai \
+  --payload-json '{"project_id":"prj_demo","deployment_template_id":"img_demo","auth_password":"validatorsecret"}' \
+  >/tmp/theta_disposable_validate_dry_run.json
+
 python3 - <<'PY'
 import json
 from pathlib import Path
@@ -51,10 +56,11 @@ for path in [
     '/tmp/theta_edgecloud_ondemand_infer_dry_run.json',
     '/tmp/theta_edgecloud_vm_types.json',
     '/tmp/theta_create_redacted.json',
+    '/tmp/theta_disposable_validate_dry_run.json',
 ]:
     json.loads(Path(path).read_text())
-redacted = Path('/tmp/theta_create_redacted.json').read_text()
-for leaked in ['supersecret', 'regsecret', 'toksecret']:
+redacted = Path('/tmp/theta_create_redacted.json').read_text() + Path('/tmp/theta_disposable_validate_dry_run.json').read_text()
+for leaked in ['supersecret', 'regsecret', 'toksecret', 'validatorsecret']:
     if leaked in redacted:
         raise SystemExit(f'secret leaked in dry-run output: {leaked}')
 print('Smoke test passed: syntax, setup, capabilities, dry-runs, negative validation, redaction, controller VM catalog')

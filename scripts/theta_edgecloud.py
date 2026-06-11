@@ -10,6 +10,8 @@ import argparse
 import base64
 import json
 import os
+import secrets
+import string
 import sys
 import time
 import urllib.error
@@ -341,6 +343,116 @@ def controller_delete_deployment(args: argparse.Namespace) -> int:
     return 0
 
 
+def generated_password(length: int = 24) -> str:
+    alphabet = string.ascii_letters + string.digits
+    return "".join(secrets.choice(alphabet) for _ in range(length))
+
+
+def basic_auth_headers(user: str, pw: str) -> Dict[str, str]:
+    encoded = base64.b64encode(f"{user}:{pw}".encode()).decode()
+    return {"Authorization": f"Basic {encoded}"}
+
+
+def find_key(obj: Any, names: set[str]) -> Optional[Any]:
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            if str(key).lower() in names and value not in (None, ""):
+                return value
+        for value in obj.values():
+            found = find_key(value, names)
+            if found not in (None, ""):
+                return found
+    elif isinstance(obj, list):
+        for item in obj:
+            found = find_key(item, names)
+            if found not in (None, ""):
+                return found
+    return None
+
+
+def wait_for_probe(endpoint: str, headers: Dict[str, str], *, probe: str, timeout: int, interval: int, request_timeout: int) -> Dict[str, Any]:
+    deadline = time.time() + timeout
+    attempts = []
+    path = "/v1/models" if probe == "openai" else "/config"
+    while True:
+        try:
+            data = request_json("GET", f"{endpoint.rstrip('/')}{path}", headers=headers, timeout=request_timeout)
+            return {"ready": True, "probe": probe, "path": path, "response": data, "attempts": attempts}
+        except SystemExit as e:
+            attempts.append(str(e)[:500])
+            if time.time() >= deadline:
+                return {"ready": False, "probe": probe, "path": path, "attempts": attempts[-10:]}
+            time.sleep(max(1, interval))
+
+
+def controller_validate_disposable(args: argparse.Namespace) -> int:
+    try:
+        payload = json.loads(args.payload_json)
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"Invalid --payload-json: {e}")
+    if not isinstance(payload, dict):
+        raise SystemExit("--payload-json must be a JSON object")
+
+    auth_user = args.auth_username or payload.get("auth_username") or f"hermes_{secrets.token_hex(4)}"
+    auth_pass = args.auth_password or payload.get("auth_password") or generated_password()
+    payload["auth_username"] = auth_user
+    payload["auth_password"] = auth_pass
+
+    plan = {
+        "dry_run": True,
+        "would": [
+            "create deployment with generated Basic Auth",
+            f"poll {args.probe} readiness probe",
+            "run one minimal readiness/smoke check",
+            "delete deployment in cleanup",
+        ],
+        "probe": args.probe,
+        "payload": payload,
+        "timeout_seconds": args.ready_timeout,
+    }
+    if env("THETA_DRY_RUN") == "1" or args.dry_run:
+        json_out(plan)
+        return 0
+    if not args.yes:
+        raise SystemExit("Refusing paid/mutating disposable validation without --yes or THETA_DRY_RUN=1")
+
+    created = None
+    delete_result = None
+    readiness = None
+    smoke = None
+    try:
+        created = request_json("POST", f"{CONTROLLER_BASE}/deployment", headers=controller_headers(require=True), payload=payload, timeout=args.timeout)
+        endpoint = str(find_key(created, {"endpoint", "endpointurl", "url"}) or "").rstrip("/")
+        if not endpoint:
+            raise SystemExit(json.dumps(redact({"error": "missing_endpoint_in_create_response", "create_response": created}), indent=2))
+        headers = basic_auth_headers(auth_user, auth_pass)
+        readiness = wait_for_probe(endpoint, headers, probe=args.probe, timeout=args.ready_timeout, interval=args.interval, request_timeout=args.timeout)
+        if args.probe == "openai" and readiness.get("ready") and args.smoke_message:
+            model = args.model or str(find_key(readiness.get("response"), {"id", "model"}) or "default")
+            smoke_payload = {"model": model, "messages": [{"role": "user", "content": args.smoke_message}], "stream": False}
+            smoke = request_json("POST", f"{endpoint}/v1/chat/completions", headers=headers, payload=smoke_payload, timeout=args.timeout)
+        return_code = 0 if readiness and readiness.get("ready") else 1
+    finally:
+        if created is not None:
+            base_id = find_key(created, {"baseid", "base_id", "deployment_id", "id"})
+            shard = find_key(created, {"shard"})
+            suffix = find_key(created, {"suffix"})
+            pid = payload.get("project_id") or env("THETA_EC_PROJECT_ID")
+            try:
+                if base_id and pid:
+                    url = controller_url(CONTROLLER_BASE, f"/deployment/base/{urllib.parse.quote(str(base_id))}", {"project_id": pid})
+                    delete_result = request_json("DELETE", url, headers=controller_headers(require=True), timeout=args.timeout)
+                elif shard and suffix and pid:
+                    url = controller_url(CONTROLLER_BASE, f"/deployment/{urllib.parse.quote(str(shard))}/{urllib.parse.quote(str(suffix))}", {"project_id": pid})
+                    delete_result = request_json("DELETE", url, headers=controller_headers(require=True), timeout=args.timeout)
+                else:
+                    delete_result = {"warning": "could_not_determine_delete_handle", "has_project_id": bool(pid)}
+            except SystemExit as e:
+                delete_result = {"delete_error": str(e)}
+        json_out({"create_response": created, "readiness": readiness, "smoke_response": smoke, "delete_result": delete_result})
+    return return_code
+
+
 def inference_headers() -> Dict[str, str]:
     token = env("THETA_INFERENCE_AUTH_TOKEN")
     user = env("THETA_INFERENCE_AUTH_USER")
@@ -479,6 +591,20 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--dry-run", action="store_true")
     s.add_argument("--yes", action="store_true", help="Required for real delete")
     s.set_defaults(func=controller_delete_deployment)
+
+    s = sub.add_parser("controller-validate-disposable")
+    s.add_argument("--payload-json", required=True)
+    s.add_argument("--probe", choices=["openai", "gradio"], default="openai")
+    s.add_argument("--auth-username")
+    s.add_argument("--auth-password")
+    s.add_argument("--ready-timeout", type=int, default=900)
+    s.add_argument("--interval", type=int, default=15)
+    s.add_argument("--timeout", type=int, default=120)
+    s.add_argument("--model")
+    s.add_argument("--smoke-message", default="Theta disposable validation OK")
+    s.add_argument("--dry-run", action="store_true")
+    s.add_argument("--yes", action="store_true", help="Required for real paid/mutating disposable validation")
+    s.set_defaults(func=controller_validate_disposable)
 
     s = sub.add_parser("dedicated-models")
     s.add_argument("--timeout", type=int, default=30)
