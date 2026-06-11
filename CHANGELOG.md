@@ -4,6 +4,19 @@
 
 - No unreleased changes yet.
 
+## 0.2.0 - 2026-06-11
+
+- Aligned v0.2 with Theta's official MCP server, `@thetalabs/on-demand-api-mcp`, for on-demand model access.
+- Added Hermes MCP config, setup guide, and discovery validator for the official Theta MCP server.
+- Live-validated official MCP discovery, `list_services`, and `gpt_oss_120b` inference with `input.stream=false`.
+- Documented the correct public upstream repository: `https://github.com/thetatoken/on-demand-api-mcp`.
+- Added structured examples for `gpt_oss_120b`, `qwen3`, Flux, Stable Diffusion XL Turbo, Whisper, LLaVA, Step Video, and dedicated endpoint workflows.
+- Added `ondemand-upload-url` helper for presigned upload URLs.
+- Added `controller-lifecycle-deployment --action start|stop` helper with dry-run/`--yes` safety.
+- Completed `controller-validate-disposable` with generated Basic Auth, readiness probes, cleanup verification, and pre/post balance delta reporting.
+- Added `dedicated-ready` helper for configurable OpenAI/Gradio readiness checks.
+- Expanded smoke tests, dry-run redaction checks, release archive inspection, and security scan coverage.
+
 ## 0.1.0 - 2026-06-10
 
 - Created ongoing project scaffold for public release.
