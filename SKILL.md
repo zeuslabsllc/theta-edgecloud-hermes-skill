@@ -102,6 +102,13 @@ After adding config, restart Hermes or run `/reload-mcp`. Expected Hermes tool n
 
 This skill remains useful for Hermes-specific setup guidance, safety practices, controller/project APIs, balance checks, dedicated OpenAI-compatible endpoints, and disposable deployment validation.
 
+Supporting files:
+
+- `references/hermes-theta-official-mcp-config.yaml` — copy/paste Hermes config example.
+- `references/official-theta-mcp-hermes-setup.md` — full setup and troubleshooting notes.
+- `scripts/validate_official_mcp.sh` — checks Node/npm/package metadata.
+- `scripts/test_official_mcp_hermes.sh` — verifies Hermes can discover the 4 official MCP tools in a temporary profile.
+
 ## On-demand service guidance
 
 Live validation on 2026-06-09 confirmed:

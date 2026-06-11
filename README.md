@@ -36,6 +36,7 @@ Validate local prerequisites for the official MCP server:
 
 ```bash
 scripts/validate_official_mcp.sh
+scripts/test_official_mcp_hermes.sh
 ```
 
 Example Hermes MCP config is provided at:
@@ -43,6 +44,8 @@ Example Hermes MCP config is provided at:
 ```text
 references/hermes-theta-official-mcp-config.yaml
 ```
+
+Full setup notes are in `references/official-theta-mcp-hermes-setup.md`.
 
 After adding config and token, restart Hermes or run `/reload-mcp`. The official tools should appear with names similar to:
 

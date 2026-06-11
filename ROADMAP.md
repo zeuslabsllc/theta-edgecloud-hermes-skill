@@ -40,8 +40,9 @@
 - [x] Document Theta's official on-demand MCP server as the preferred on-demand integration path.
 - [x] Add Hermes MCP config example for `@thetalabs/on-demand-api-mcp`.
 - [x] Add official MCP prerequisite validator script.
-- [ ] Test official Theta MCP server discovery inside Hermes with a real token.
-- [ ] Document `hermes mcp add/test/list` flow after live validation.
+- [x] Test official Theta MCP server discovery inside Hermes with a temporary profile.
+- [x] Document `hermes mcp list/test` flow after discovery validation.
+- [ ] Test official Theta MCP on-demand inference inside Hermes with a real token.
 - [x] Port deployment list/create/delete helpers.
 - [x] Port balance lookup helper.
 - [x] Port standard/custom templates listing.
