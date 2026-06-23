@@ -25,6 +25,11 @@ python scripts/theta_edgecloud.py controller-vm-types
 python scripts/theta_edgecloud.py controller-balance
 python scripts/theta_edgecloud.py controller-standard-templates --category serving
 python scripts/theta_edgecloud.py ondemand-upload-url --service whisper --input-field audio_filename --dry-run
+python scripts/theta_edgecloud.py video-upload-url --dry-run
+python scripts/theta_edgecloud.py video-create --source-uri "https://example.com/video.mp4" --dry-run
+python scripts/theta_edgecloud.py video-list
+python scripts/theta_edgecloud.py stream-list
+python scripts/theta_edgecloud.py ingestors-list
 python scripts/theta_edgecloud.py controller-lifecycle-deployment --action stop --deployment-id base_demo --project-id prj_demo --dry-run
 python scripts/theta_edgecloud.py controller-validate-disposable --dry-run --org-id org_demo --probe openai --payload-json '{"project_id":"prj_demo","deployment_template_id":"img_demo"}'
 python scripts/theta_edgecloud.py dedicated-ready --probe openai
@@ -108,4 +113,6 @@ scripts/smoke_test.sh
 ## Notes
 
 This Hermes version is a skill + helper script. v0.2 integrates Theta's official MCP server for on-demand inference and extends it with Hermes-specific controller/dedicated endpoint workflows.
+
+The helper also includes initial Theta Video API support from the official Markdown docs: VOD upload/transcode/get/list/search, livestream create/get/list, ingestor list/select, dry-run guards for mutating calls, and recursive redaction for service-account secrets and stream keys.
 

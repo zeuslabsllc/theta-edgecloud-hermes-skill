@@ -49,7 +49,7 @@
 - [x] Port on-demand infer/status/poll helpers.
 - [x] Port deployment stop/start helpers.
 - [x] Port on-demand upload-url helper.
-- [ ] Port Theta Video API helpers.
+- [x] Port initial Theta Video API helpers for VOD upload/transcode/get/list/search, livestream list/create/get, and ingestor list/select.
 - [x] Add dedicated endpoint readiness retry helper with configurable window.
 - [x] Add safe disposable dedicated deployment validation command: create with generated Basic Auth, poll readiness, run template-appropriate probe, and cleanup.
 - [x] Add balance delta reporting to disposable dedicated deployment validation.
@@ -70,4 +70,6 @@
 - [ ] Monthly check for Theta docs/API/model catalog changes.
 - [ ] Update model aliases as live catalog changes.
 - [ ] Update troubleshooting guidance for quota/capacity/auth changes.
+- [ ] Add live read-only Theta Video API validation when service-account credentials are available.
+- [ ] Add optional webhook receiver examples for Theta Video events with idempotency guidance.
 

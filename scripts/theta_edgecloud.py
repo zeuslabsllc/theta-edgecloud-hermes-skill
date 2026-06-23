@@ -23,6 +23,7 @@ from typing import Any, Dict, Optional
 ONDEMAND_BASE = "https://ondemand.thetaedgecloud.com"
 CONTROLLER_BASE = "https://controller.thetaedgecloud.com"
 EDGE_API_BASE = "https://api.thetaedgecloud.com"
+VIDEO_API_BASE = "https://api.thetavideoapi.com"
 
 DEFAULT_HEADERS = {
     "Accept": "application/json, text/plain, */*",
@@ -960,6 +961,137 @@ def controller_lifecycle_deployment(args: argparse.Namespace) -> int:
     return 1
 
 
+
+def video_headers(require: bool = True) -> Dict[str, str]:
+    sa_id = env("THETA_VIDEO_SA_ID")
+    sa_secret = env("THETA_VIDEO_SA_SECRET")
+    if require and not (sa_id and sa_secret):
+        raise SystemExit("Missing Theta Video credentials: set THETA_VIDEO_SA_ID and THETA_VIDEO_SA_SECRET")
+    headers: Dict[str, str] = {}
+    if sa_id:
+        headers["x-tva-sa-id"] = sa_id
+    if sa_secret:
+        headers["x-tva-sa-secret"] = sa_secret
+    return headers
+
+
+def video_service_account_id() -> str:
+    sa_id = env("THETA_VIDEO_SA_ID")
+    if not sa_id:
+        raise SystemExit("Missing THETA_VIDEO_SA_ID")
+    return sa_id
+
+
+def guarded_video_mutation(args: argparse.Namespace, description: str, plan: Dict[str, Any]) -> bool:
+    if env("THETA_DRY_RUN") == "1" or getattr(args, "dry_run", False):
+        json_out({"dry_run": True, "would_call": description, **plan})
+        return True
+    if not getattr(args, "yes", False):
+        raise SystemExit(f"Refusing Theta Video mutating call without --yes or THETA_DRY_RUN=1: {description}")
+    return False
+
+
+def video_upload_url(args: argparse.Namespace) -> int:
+    if guarded_video_mutation(args, "POST /upload", {}):
+        return 0
+    data = request_json("POST", f"{VIDEO_API_BASE}/upload", headers=video_headers(), timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
+def video_create(args: argparse.Namespace) -> int:
+    payload: Dict[str, Any] = {}
+    if args.payload_json:
+        try:
+            payload.update(json.loads(args.payload_json))
+        except json.JSONDecodeError as e:
+            raise SystemExit(f"Invalid --payload-json: {e}")
+    if args.source_uri:
+        payload["source_uri"] = args.source_uri
+    if args.source_upload_id:
+        payload["source_upload_id"] = args.source_upload_id
+    if args.playback_policy:
+        payload["playback_policy"] = args.playback_policy
+    if not (payload.get("source_uri") or payload.get("source_upload_id")):
+        raise SystemExit("Provide --source-uri, --source-upload-id, or --payload-json containing one of them")
+    if guarded_video_mutation(args, "POST /video", {"payload": payload}):
+        return 0
+    data = request_json("POST", f"{VIDEO_API_BASE}/video", headers=video_headers(), payload=payload, timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
+def video_get(args: argparse.Namespace) -> int:
+    data = request_json("GET", f"{VIDEO_API_BASE}/video/{urllib.parse.quote(args.video_id)}", headers=video_headers(), timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
+def video_list(args: argparse.Namespace) -> int:
+    sa_id = args.service_account_id or video_service_account_id()
+    query = urllib.parse.urlencode({"page": args.page, "number": args.number})
+    data = request_json("GET", f"{VIDEO_API_BASE}/video/{urllib.parse.quote(sa_id)}/list?{query}", headers=video_headers(), timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
+def video_search(args: argparse.Namespace) -> int:
+    sa_id = args.service_account_id or video_service_account_id()
+    params = {"page": args.page, "number": args.number}
+    if args.operator:
+        params["operator"] = args.operator
+    for item in args.query or []:
+        if "=" not in item:
+            raise SystemExit("--query values must be key=value pairs; nested metadata search supports dot keys such as obj.key=value")
+        k, v = item.split("=", 1)
+        params[k] = v
+    query = urllib.parse.urlencode(params)
+    data = request_json("GET", f"{VIDEO_API_BASE}/video/{urllib.parse.quote(sa_id)}/search?{query}", headers=video_headers(), timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
+def stream_create(args: argparse.Namespace) -> int:
+    payload = {"name": args.name}
+    if guarded_video_mutation(args, "POST /stream", {"payload": payload}):
+        return 0
+    data = request_json("POST", f"{VIDEO_API_BASE}/stream", headers=video_headers(), payload=payload, timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
+def stream_get(args: argparse.Namespace) -> int:
+    data = request_json("GET", f"{VIDEO_API_BASE}/stream/{urllib.parse.quote(args.stream_id)}", headers=video_headers(), timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
+def stream_list(args: argparse.Namespace) -> int:
+    sa_id = args.service_account_id or video_service_account_id()
+    params = {}
+    if args.status:
+        params["status"] = args.status
+    query = ("?" + urllib.parse.urlencode(params)) if params else ""
+    data = request_json("GET", f"{VIDEO_API_BASE}/service_account/{urllib.parse.quote(sa_id)}/streams{query}", headers=video_headers(), timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
+def ingestors_list(args: argparse.Namespace) -> int:
+    data = request_json("GET", f"{VIDEO_API_BASE}/ingestor/filter", headers=video_headers(), timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
+def ingestor_select(args: argparse.Namespace) -> int:
+    payload = {"tva_stream": args.stream_id}
+    if guarded_video_mutation(args, "PUT /ingestor/{id}/select", {"ingestor_id": args.ingestor_id, "payload": payload}):
+        return 0
+    data = request_json("PUT", f"{VIDEO_API_BASE}/ingestor/{urllib.parse.quote(args.ingestor_id)}/select", headers=video_headers(), payload=payload, timeout=args.timeout)
+    json_out(data)
+    return 0
+
+
 def dedicated_ready(args: argparse.Namespace) -> int:
     readiness = wait_for_probe(
         inference_base(),
@@ -1136,6 +1268,74 @@ def build_parser() -> argparse.ArgumentParser:
         help="Required for real paid/mutating disposable validation",
     )
     s.set_defaults(func=controller_validate_disposable)
+
+
+    s = sub.add_parser("video-upload-url")
+    s.add_argument("--timeout", type=int, default=60)
+    s.add_argument("--dry-run", action="store_true")
+    s.add_argument("--yes", action="store_true", help="Required for real upload object creation")
+    s.set_defaults(func=video_upload_url)
+
+    s = sub.add_parser("video-create")
+    s.add_argument("--source-uri")
+    s.add_argument("--source-upload-id")
+    s.add_argument("--playback-policy", default="public")
+    s.add_argument("--payload-json")
+    s.add_argument("--timeout", type=int, default=120)
+    s.add_argument("--dry-run", action="store_true")
+    s.add_argument("--yes", action="store_true", help="Required for real video transcode creation")
+    s.set_defaults(func=video_create)
+
+    s = sub.add_parser("video-get")
+    s.add_argument("video_id")
+    s.add_argument("--timeout", type=int, default=60)
+    s.set_defaults(func=video_get)
+
+    s = sub.add_parser("video-list")
+    s.add_argument("--service-account-id")
+    s.add_argument("--page", type=int, default=1)
+    s.add_argument("--number", type=int, default=100)
+    s.add_argument("--timeout", type=int, default=60)
+    s.set_defaults(func=video_list)
+
+    s = sub.add_parser("video-search")
+    s.add_argument("--service-account-id")
+    s.add_argument("--query", action="append", help="Metadata/file_name key=value filter; repeatable; dot keys supported")
+    s.add_argument("--operator", choices=["and", "or"])
+    s.add_argument("--page", type=int, default=1)
+    s.add_argument("--number", type=int, default=100)
+    s.add_argument("--timeout", type=int, default=60)
+    s.set_defaults(func=video_search)
+
+    s = sub.add_parser("stream-create")
+    s.add_argument("--name", required=True)
+    s.add_argument("--timeout", type=int, default=60)
+    s.add_argument("--dry-run", action="store_true")
+    s.add_argument("--yes", action="store_true", help="Required for real livestream creation")
+    s.set_defaults(func=stream_create)
+
+    s = sub.add_parser("stream-get")
+    s.add_argument("stream_id")
+    s.add_argument("--timeout", type=int, default=60)
+    s.set_defaults(func=stream_get)
+
+    s = sub.add_parser("stream-list")
+    s.add_argument("--service-account-id")
+    s.add_argument("--status", choices=["on", "off"])
+    s.add_argument("--timeout", type=int, default=60)
+    s.set_defaults(func=stream_list)
+
+    s = sub.add_parser("ingestors-list")
+    s.add_argument("--timeout", type=int, default=60)
+    s.set_defaults(func=ingestors_list)
+
+    s = sub.add_parser("ingestor-select")
+    s.add_argument("--ingestor-id", required=True)
+    s.add_argument("--stream-id", required=True)
+    s.add_argument("--timeout", type=int, default=60)
+    s.add_argument("--dry-run", action="store_true")
+    s.add_argument("--yes", action="store_true", help="Required for real ingestor selection")
+    s.set_defaults(func=ingestor_select)
 
     s = sub.add_parser("dedicated-ready")
     s.add_argument("--probe", choices=["openai", "gradio"], default="openai")

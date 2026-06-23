@@ -77,6 +77,11 @@ python scripts/theta_edgecloud.py controller-list-deployments
 python scripts/theta_edgecloud.py controller-lifecycle-deployment --action stop --deployment-id base_demo --project-id prj_demo --dry-run
 python scripts/theta_edgecloud.py controller-validate-disposable --dry-run --org-id org_demo --probe openai --payload-json '{"project_id":"prj_demo","deployment_template_id":"img_demo"}'
 python scripts/theta_edgecloud.py ondemand-upload-url --service whisper --input-field audio_filename --dry-run
+python scripts/theta_edgecloud.py video-upload-url --dry-run
+python scripts/theta_edgecloud.py video-create --source-uri "https://example.com/video.mp4" --dry-run
+python scripts/theta_edgecloud.py video-list
+python scripts/theta_edgecloud.py stream-list
+python scripts/theta_edgecloud.py ingestors-list
 python scripts/theta_edgecloud.py dedicated-ready --probe openai
 python scripts/theta_edgecloud.py dedicated-models
 python scripts/theta_edgecloud.py dedicated-chat --message "Say hello"
@@ -257,6 +262,34 @@ A full Hermes tool/plugin version should eventually cover:
 - On-demand model APIs: list/infer/status/poll/chat
 - Dedicated inference endpoint: models/chat
 - Theta Video APIs: list/upload/video/stream/ingestor
+
+## Theta Video API guidance
+
+The official Markdown docs confirm Theta Video Service still uses the `https://api.thetavideoapi.com` base URL with service-account headers:
+
+- `x-tva-sa-id` from `THETA_VIDEO_SA_ID`
+- `x-tva-sa-secret` from `THETA_VIDEO_SA_SECRET`
+
+Useful VOD flow:
+
+1. `POST /upload` creates a presigned upload URL and returns an upload `id` used later as `source_upload_id`.
+2. Upload bytes to the returned presigned URL with `PUT` and `Content-Type: application/octet-stream`.
+3. `POST /video` starts transcoding from either `source_upload_id` or an external `source_uri`.
+4. `GET /video/{video_id}` polls progress; finished videos return `playback_uri`, commonly an HLS `master.m3u8` URL.
+5. `GET /video/{service_account_id}/list` lists videos.
+6. `GET /video/{service_account_id}/search` searches `metadata` and `file_name`; nested metadata keys use dot notation such as `obj.key=value`, and `operator=and|or` is supported.
+
+Useful livestream flow:
+
+1. `POST /stream` creates a reusable livestream. Each service account can create at most 3 livestreams.
+2. `GET /ingestor/filter` lists available Edge Ingestors sorted by distance from the requester IP.
+3. `PUT /ingestor/{ingestor_id}/select` selects an ingestor for a stream and unlocks `stream_server` plus `stream_key` for OBS/RTMP.
+4. Starting/stopping the OBS source automatically turns stream status on/off.
+5. `GET /service_account/{service_account_id}/streams` lists livestreams; optional `status=on|off` filters.
+
+The helper now includes dry-run/`--yes` protected video commands: `video-upload-url`, `video-create`, `video-get`, `video-list`, `video-search`, `stream-create`, `stream-get`, `stream-list`, `ingestors-list`, and `ingestor-select`. Mutating operations refuse real execution unless `--yes` is passed or `THETA_DRY_RUN=1` / `--dry-run` is used. Output is recursively redacted so service-account secrets, upload URLs, and stream keys are not leaked.
+
+The video webhooks docs also identify useful events for future webhook automation: `video.created`, `video.updated`, `video.partial_finished`, `video.finished`, `video.errored`, and `video.deleted`. Webhook delivery is retry-with-exponential-backoff and event ordering is not guaranteed, so webhook consumers should be idempotent and fetch the object URI from Theta before acting.
 
 ## Publishing for other Hermes users
 

@@ -59,6 +59,23 @@ THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py controller-lifecycle-deployme
   --project-id prj_demo \
   >/tmp/theta_lifecycle_dry_run.json
 
+THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py video-upload-url \
+  >/tmp/theta_video_upload_url_dry_run.json
+
+THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py video-create \
+  --source-uri 'https://example.com/video.mp4' \
+  --payload-json '{"metadata":{"secret_note":"should_redact","public_note":"ok"}}' \
+  >/tmp/theta_video_create_dry_run.json
+
+THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py stream-create \
+  --name demo \
+  >/tmp/theta_stream_create_dry_run.json
+
+THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py ingestor-select \
+  --ingestor-id ingestor_demo \
+  --stream-id stream_demo \
+  >/tmp/theta_ingestor_select_dry_run.json
+
 python3 - <<'PY'
 import json
 from pathlib import Path
@@ -72,13 +89,21 @@ for path in [
     '/tmp/theta_create_redacted.json',
     '/tmp/theta_disposable_validate_dry_run.json',
     '/tmp/theta_lifecycle_dry_run.json',
+    '/tmp/theta_video_upload_url_dry_run.json',
+    '/tmp/theta_video_create_dry_run.json',
+    '/tmp/theta_stream_create_dry_run.json',
+    '/tmp/theta_ingestor_select_dry_run.json',
 ]:
     json.loads(Path(path).read_text())
-redacted = Path('/tmp/theta_create_redacted.json').read_text() + Path('/tmp/theta_disposable_validate_dry_run.json').read_text()
-for leaked in ['supersecret', 'regsecret', 'toksecret', 'validatorsecret']:
+redacted = ''.join(Path(path).read_text() for path in [
+    '/tmp/theta_create_redacted.json',
+    '/tmp/theta_disposable_validate_dry_run.json',
+    '/tmp/theta_video_create_dry_run.json',
+])
+for leaked in ['supersecret', 'regsecret', 'toksecret', 'validatorsecret', 'should_redact']:
     if leaked in redacted:
         raise SystemExit(f'secret leaked in dry-run output: {leaked}')
-print('Smoke test passed: syntax, setup, capabilities, dry-runs, negative validation, redaction, controller VM catalog')
+print('Smoke test passed: syntax, setup, capabilities, dry-runs, video dry-runs, negative validation, redaction, controller VM catalog')
 PY
 
 rm -rf scripts/__pycache__
