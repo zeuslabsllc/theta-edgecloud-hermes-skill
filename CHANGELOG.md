@@ -2,9 +2,15 @@
 
 ## Unreleased
 
+- No unreleased changes yet.
+
+## 0.2.1 - 2026-06-23
+
 - Reviewed the downloaded 61-file official Theta Markdown docs corpus for skill improvements.
 - Added initial Theta Video API helper commands: `video-upload-url`, `video-create`, `video-get`, `video-list`, `video-search`, `stream-create`, `stream-get`, `stream-list`, `ingestors-list`, and `ingestor-select`.
-- Added dry-run/`--yes` safety gates for mutating Theta Video calls and kept recursive redaction for service-account secrets, upload URLs, and stream keys.
+- Added dry-run/`--yes` safety gates for mutating Theta Video calls.
+- Hardened recursive redaction for service-account secrets, signed/presigned upload URLs, credential-bearing URL query values, and stream keys.
+- Enforced `https://` before sending dedicated endpoint credentials to readiness/smoke probes.
 - Documented VOD upload/transcode/poll/list/search flow, livestream/ingestor flow, and webhook event caveats from the official docs.
 
 ## 0.2.0 - 2026-06-11

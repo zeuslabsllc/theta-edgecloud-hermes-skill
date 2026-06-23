@@ -13,6 +13,9 @@ __pycache__/
 *.tar.gz
 *.sha256
 
+# Local PR/demo materials
+pr-materials/
+
 # OS/editor
 .DS_Store
 .vscode/

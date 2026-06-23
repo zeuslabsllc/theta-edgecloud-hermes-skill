@@ -11,6 +11,7 @@ import argparse
 import base64
 import json
 import os
+import re
 import secrets
 import string
 import sys
@@ -37,12 +38,47 @@ SENSITIVE_KEY_PARTS = (
     "api_key",
     "apikey",
     "bearer",
+    "credential",
     "key",
     "password",
+    "presigned",
     "registry_password",
     "secret",
+    "signed_url",
     "token",
+    "upload_url",
+    "upload_uri",
 )
+
+SECRET_ENV_NAMES = (
+    "THETA_EC_API_KEY",
+    "THETA_ONDEMAND_API_TOKEN",
+    "THETA_ONDEMAND_API_KEY",
+    "THETA_API_KEY",
+    "THETA_INFERENCE_AUTH_TOKEN",
+    "THETA_INFERENCE_AUTH_USER",
+    "THETA_INFERENCE_AUTH_PASS",
+    "THETA_VIDEO_SA_ID",
+    "THETA_VIDEO_SA_SECRET",
+)
+
+SENSITIVE_QUERY_PARTS = (
+    "access",
+    "authorization",
+    "credential",
+    "expires",
+    "key",
+    "password",
+    "policy",
+    "secret",
+    "signature",
+    "sig",
+    "token",
+    "x_amz",
+    "x_goog",
+)
+
+URL_RE = re.compile(r"https?://[^\s\"'<>]+")
 
 
 def env(name: str) -> Optional[str]:
@@ -63,6 +99,53 @@ def is_sensitive_key(key: str) -> bool:
     return any(part in normalized for part in SENSITIVE_KEY_PARTS)
 
 
+def known_secret_values() -> list[str]:
+    values = []
+    for name in SECRET_ENV_NAMES:
+        value = env(name)
+        if value and len(value) >= 4:
+            values.append(value)
+    return sorted(set(values), key=len, reverse=True)
+
+
+def redact_known_secrets_in_text(text: str) -> str:
+    for value in known_secret_values():
+        text = text.replace(value, "[REDACTED]")
+    return text
+
+
+def redact_url_value(url: str) -> str:
+    """Redact credentials and signed-query material from URL-shaped strings."""
+    parsed = urllib.parse.urlsplit(url)
+    if not parsed.scheme or not parsed.netloc:
+        return redact_known_secrets_in_text(url)
+
+    netloc = parsed.netloc
+    if parsed.username or parsed.password:
+        host = parsed.hostname or ""
+        if parsed.port:
+            host = f"{host}:{parsed.port}"
+        netloc = f"[REDACTED]@{host}"
+
+    query_items = urllib.parse.parse_qsl(parsed.query, keep_blank_values=True)
+    redacted_query = []
+    for key, value in query_items:
+        normalized = key.lower().replace("-", "_")
+        if any(part in normalized for part in SENSITIVE_QUERY_PARTS):
+            redacted_query.append((key, "[REDACTED]"))
+        else:
+            redacted_query.append((key, redact_known_secrets_in_text(value)))
+    query = urllib.parse.urlencode(redacted_query, doseq=True)
+    return urllib.parse.urlunsplit(
+        (parsed.scheme, netloc, parsed.path, query, parsed.fragment)
+    )
+
+
+def redact_text_value(text: str) -> str:
+    text = redact_known_secrets_in_text(text)
+    return URL_RE.sub(lambda match: redact_url_value(match.group(0)), text)
+
+
 def redact(obj: Any, *, parent_key: str = "") -> Any:
     """Recursively redact secret-like values before printing helper output."""
     if is_sensitive_key(parent_key):
@@ -71,6 +154,8 @@ def redact(obj: Any, *, parent_key: str = "") -> Any:
         return {k: redact(v, parent_key=str(k)) for k, v in obj.items()}
     if isinstance(obj, list):
         return [redact(v, parent_key=parent_key) for v in obj]
+    if isinstance(obj, str):
+        return redact_text_value(obj)
     return obj
 
 
@@ -79,7 +164,7 @@ def redact_text(text: str) -> str:
         parsed = json.loads(text)
         return json.dumps(redact(parsed), sort_keys=True)[:1000]
     except Exception:
-        return text[:1000]
+        return redact_text_value(text)[:1000]
 
 
 def json_out(obj: Any) -> None:
@@ -639,6 +724,15 @@ def find_key(obj: Any, names: set[str]) -> Optional[Any]:
     return None
 
 
+def require_https_base(url: str, label: str) -> str:
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme != "https":
+        raise SystemExit(
+            f"{label} must be an https:// URL to avoid leaking endpoint credentials"
+        )
+    return url.rstrip("/")
+
+
 def wait_for_probe(
     endpoint: str,
     headers: Dict[str, str],
@@ -648,6 +742,7 @@ def wait_for_probe(
     interval: int,
     request_timeout: int,
 ) -> Dict[str, Any]:
+    endpoint = require_https_base(endpoint, "Probe endpoint")
     deadline = time.time() + timeout
     attempts = []
     path = "/v1/models" if probe == "openai" else "/config"
@@ -876,12 +971,7 @@ def inference_base() -> str:
     ep = env("THETA_INFERENCE_ENDPOINT")
     if not ep:
         raise SystemExit("Missing THETA_INFERENCE_ENDPOINT")
-    parsed = urllib.parse.urlparse(ep)
-    if parsed.scheme != "https":
-        raise SystemExit(
-            "THETA_INFERENCE_ENDPOINT must be an https:// URL to avoid leaking endpoint credentials"
-        )
-    return ep.rstrip("/")
+    return require_https_base(ep, "THETA_INFERENCE_ENDPOINT")
 
 
 def dedicated_models(args: argparse.Namespace) -> int:

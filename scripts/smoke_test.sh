@@ -103,6 +103,20 @@ redacted = ''.join(Path(path).read_text() for path in [
 for leaked in ['supersecret', 'regsecret', 'toksecret', 'validatorsecret', 'should_redact']:
     if leaked in redacted:
         raise SystemExit(f'secret leaked in dry-run output: {leaked}')
+
+from scripts.theta_edgecloud import redact, redact_text_value
+sample = {
+    'upload_url': 'https://uploads.example/path?token=urlsecret&ok=1',
+    'source_uri': 'https://cdn.example/video.mp4?X-Amz-Signature=sigsecret&public=ok',
+    'stream_key': 'streamsecret',
+    'message': 'plain text with https://user:pass@example.com/a?api_key=keysecret&safe=ok',
+}
+redacted_sample = json.dumps(redact(sample)) + redact_text_value('error token live_secret https://host/path?signature=sigsecret')
+for leaked in ['urlsecret', 'sigsecret', 'streamsecret', 'keysecret']:
+    if leaked in redacted_sample:
+        raise SystemExit(f'secret-like URL material leaked in redaction helper: {leaked}')
+if 'public=ok' not in redacted_sample and 'public\\": \\"ok' not in redacted_sample:
+    raise SystemExit('expected non-sensitive URL/query material to remain visible')
 print('Smoke test passed: syntax, setup, capabilities, dry-runs, video dry-runs, negative validation, redaction, controller VM catalog')
 PY
 

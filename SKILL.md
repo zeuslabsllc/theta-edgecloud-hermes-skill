@@ -1,7 +1,7 @@
 ---
 name: theta-edgecloud
 description: Use Theta EdgeCloud from Hermes for cost-conscious LLM, on-demand media/inference, dedicated OpenAI-compatible endpoints, GPU/deployment checks, and Theta Video workflows with command-scoped credentials and dry-run safety.
-version: 0.1.0
+version: 0.2.1
 author: Zeus Labs / Theta Communications
 license: MIT
 platforms: [linux, macos, windows]
@@ -287,7 +287,7 @@ Useful livestream flow:
 4. Starting/stopping the OBS source automatically turns stream status on/off.
 5. `GET /service_account/{service_account_id}/streams` lists livestreams; optional `status=on|off` filters.
 
-The helper now includes dry-run/`--yes` protected video commands: `video-upload-url`, `video-create`, `video-get`, `video-list`, `video-search`, `stream-create`, `stream-get`, `stream-list`, `ingestors-list`, and `ingestor-select`. Mutating operations refuse real execution unless `--yes` is passed or `THETA_DRY_RUN=1` / `--dry-run` is used. Output is recursively redacted so service-account secrets, upload URLs, and stream keys are not leaked.
+The helper now includes dry-run/`--yes` protected video commands: `video-upload-url`, `video-create`, `video-get`, `video-list`, `video-search`, `stream-create`, `stream-get`, `stream-list`, `ingestors-list`, and `ingestor-select`. Mutating operations refuse real execution unless `--yes` is passed or `THETA_DRY_RUN=1` / `--dry-run` is used. Output is recursively redacted so service-account secrets, signed/presigned upload URLs, credential-bearing URL query values, and stream keys are not leaked. Authenticated endpoint probes require `https://` before sending credentials.
 
 The video webhooks docs also identify useful events for future webhook automation: `video.created`, `video.updated`, `video.partial_finished`, `video.finished`, `video.errored`, and `video.deleted`. Webhook delivery is retry-with-exponential-backoff and event ordering is not guaranteed, so webhook consumers should be idempotent and fetch the object URI from Theta before acting.
 
@@ -302,9 +302,9 @@ Preferred public distribution options:
 2. Publish/submit to ClawHub if cross-agent distribution is desired. Current Hermes CLI support for ClawHub publishing prints a manual-submit notice, so use `https://clawhub.ai/submit` and clearly label the package as a Hermes port if ClawHub accepts it.
 3. Users can install the full release archive to get `SKILL.md` plus helper scripts:
    ```bash
-   curl -L https://github.com/zeuslabsllc/theta-edgecloud-hermes-skill/archive/refs/tags/v0.1.0.tar.gz -o theta-edgecloud-hermes-skill-v0.1.0.tar.gz
+   curl -L https://github.com/zeuslabsllc/theta-edgecloud-hermes-skill/archive/refs/tags/v0.2.1.tar.gz -o theta-edgecloud-hermes-skill-v0.2.1.tar.gz
    mkdir -p ~/.hermes/skills/theta-edgecloud
-   tar -xzf theta-edgecloud-hermes-skill-v0.1.0.tar.gz --strip-components=1 -C ~/.hermes/skills/theta-edgecloud
+   tar -xzf theta-edgecloud-hermes-skill-v0.2.1.tar.gz --strip-components=1 -C ~/.hermes/skills/theta-edgecloud
    ```
    Raw `SKILL.md` URL install/inspect is useful for previewing skill metadata but does not install bundled support scripts.
 

@@ -39,7 +39,10 @@ cd /home/hermes/theta-edgecloud-hermes-skill
 python scripts/theta_edgecloud.py setup
 python scripts/theta_edgecloud.py capabilities
 python -m py_compile scripts/theta_edgecloud.py
-grep -RInE '(api[_-]?key|token|secret|password|bearer|authorization)' . --exclude-dir=.git
+scripts/smoke_test.sh
+git ls-files -z | xargs -0 python3 scripts/secret_scan.py
+git log --all -p -- . ':(exclude)pr-materials/**' | python3 scripts/secret_scan.py
+git grep -nE '(api[_-]?key|token|secret|password|bearer|authorization)' -- ':!*.png' ':!*.jpg' ':!*.mp4' ':!*.ogg' ':!*.mp3'
 ```
 
 Manual review of grep output:

@@ -93,9 +93,9 @@ Current Hermes CLI support for ClawHub publishing prints a manual-submit notice,
 Users can install the full release from GitHub with:
 
 ```bash
-curl -L https://github.com/zeuslabsllc/theta-edgecloud-hermes-skill/archive/refs/tags/v0.2.0.tar.gz -o theta-edgecloud-hermes-skill-v0.2.0.tar.gz
+curl -L https://github.com/zeuslabsllc/theta-edgecloud-hermes-skill/archive/refs/tags/v0.2.1.tar.gz -o theta-edgecloud-hermes-skill-v0.2.1.tar.gz
 mkdir -p ~/.hermes/skills/theta-edgecloud
-tar -xzf theta-edgecloud-hermes-skill-v0.2.0.tar.gz --strip-components=1 -C ~/.hermes/skills/theta-edgecloud
+tar -xzf theta-edgecloud-hermes-skill-v0.2.1.tar.gz --strip-components=1 -C ~/.hermes/skills/theta-edgecloud
 ```
 
 To preview only the `SKILL.md` metadata through Hermes:
@@ -114,5 +114,5 @@ scripts/smoke_test.sh
 
 This Hermes version is a skill + helper script. v0.2 integrates Theta's official MCP server for on-demand inference and extends it with Hermes-specific controller/dedicated endpoint workflows.
 
-The helper also includes initial Theta Video API support from the official Markdown docs: VOD upload/transcode/get/list/search, livestream create/get/list, ingestor list/select, dry-run guards for mutating calls, and recursive redaction for service-account secrets and stream keys.
+The helper also includes initial Theta Video API support from the official Markdown docs: VOD upload/transcode/get/list/search, livestream create/get/list, ingestor list/select, dry-run guards for mutating calls, recursive redaction for service-account secrets, signed upload URL material and stream keys, and `https://` enforcement before sending dedicated endpoint credentials.
 
