@@ -11,7 +11,7 @@ hermes skills tap add zeuslabsllc/theta-edgecloud-hermes-skill
 hermes skills install zeuslabsllc/theta-edgecloud-hermes-skill/skills/theta-edgecloud
 ```
 
-In the Skills Hub UI, choose the Hermes/GitHub result named `theta-edgecloud` with identifier `zeuslabsllc/theta-edgecloud-hermes-skill/skills/theta-edgecloud`. Do not choose the legacy ClawHub result named `Theta EdgeCloud Skill`; that is a separate OpenClaw package and is not this Hermes distribution.
+In the Skills Hub UI, choose the Hermes/GitHub result named `theta-edgecloud-hermes` with identifier `zeuslabsllc/theta-edgecloud-hermes-skill/skills/theta-edgecloud`. Do not choose the legacy ClawHub result named `Theta EdgeCloud Skill`; that is a separate OpenClaw package and is not this Hermes distribution.
 
 To browse/search it after adding the tap:
 
