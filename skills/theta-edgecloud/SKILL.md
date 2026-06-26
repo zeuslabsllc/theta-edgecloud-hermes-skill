@@ -1,22 +1,21 @@
 ---
 name: theta-edgecloud
-description: Use Theta EdgeCloud from Hermes for cost-conscious LLM, on-demand media/inference, dedicated OpenAI-compatible endpoints, GPU/deployment checks, and Theta Video workflows with command-scoped credentials and dry-run safety.
+description: Theta EdgeCloud Skill for Hermes: use Theta EdgeCloud for cost-conscious LLM, on-demand media/inference, dedicated OpenAI-compatible endpoints, GPU/deployment checks, and Theta Video workflows with command-scoped credentials and dry-run safety.
 version: 0.2.1
 author: Zeus Labs / Theta Communications
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
   hermes:
-    tags: [theta, edgecloud, inference, llm, media-generation, gpu, cost-optimization]
+    tags: [theta, edgecloud, theta-edgecloud-skill, hermes-skill, inference, llm, media-generation, gpu, cost-optimization]
     homepage: https://docs.thetatoken.org/docs/edgecloud-api-keys
-    source_openclaw_skill: https://clawhub.ai/zeuslabsllc/theta-edgecloud-skill
 ---
 
 # Theta EdgeCloud for Hermes
 
 Use this skill when the user wants Hermes to reduce AI execution costs or route suitable model, media, inference, video, and GPU workloads through Theta EdgeCloud.
 
-This Hermes skill is adapted from the OpenClaw Theta EdgeCloud skill by Zeus Labs / Theta Communications. It is designed as a public, inspectable Hermes skill that other users can install and use without exposing credentials.
+This is the Hermes distribution of the Theta EdgeCloud Skill by Zeus Labs / Theta Communications. It is designed as a public, inspectable Hermes skill that other users can install and use without exposing credentials.
 
 ## Credits and support
 
@@ -299,7 +298,7 @@ Preferred public distribution options:
    ```bash
    hermes skills publish --to github --repo OWNER/REPO /path/to/theta-edgecloud-hermes-skill
    ```
-2. Publish/submit to ClawHub if cross-agent distribution is desired. Current Hermes CLI support for ClawHub publishing prints a manual-submit notice, so use `https://clawhub.ai/submit` and clearly label the package as a Hermes port if ClawHub accepts it.
+2. For public Hermes users, point them to the GitHub/skills.sh identifier `zeuslabsllc/theta-edgecloud-hermes-skill/skills/theta-edgecloud`. The legacy ClawHub package is a separate OpenClaw distribution and should not be presented as the Hermes install path.
 3. Users can install the full release archive to get `SKILL.md` plus helper scripts:
    ```bash
    curl -L https://github.com/zeuslabsllc/theta-edgecloud-hermes-skill/archive/refs/tags/v0.2.1.tar.gz -o theta-edgecloud-hermes-skill-v0.2.1.tar.gz

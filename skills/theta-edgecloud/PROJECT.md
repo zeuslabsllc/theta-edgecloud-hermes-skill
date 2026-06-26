@@ -8,8 +8,7 @@
 
 **Working directory:** `/home/hermes/theta-edgecloud-hermes-skill`
 
-**Source inspiration:** OpenClaw ClawHub skill by Zeus Labs:
-`https://clawhub.ai/zeuslabsllc/theta-edgecloud-skill`
+**Source inspiration:** Zeus Labs' OpenClaw-era Theta EdgeCloud work, ported into a dedicated Hermes skill distribution.
 
 ## Product objective
 
@@ -34,7 +33,7 @@ Acceptance criteria:
 - `python scripts/theta_edgecloud.py capabilities` works and never prints secrets.
 - Skill docs explain minimal env vars by command family.
 - Archive/package contains only intended files.
-- Ready to publish to GitHub or ClawHub.
+- Ready to publish as a Hermes GitHub/skills.sh skill.
 
 ### v0.2 — Coverage expansion
 
@@ -83,8 +82,6 @@ Candidate publish commands:
 
 ```bash
 hermes skills publish --to github --repo OWNER/REPO /home/hermes/theta-edgecloud-hermes-skill
-# ClawHub currently requires manual submission from Hermes:
-# https://clawhub.ai/submit
 ```
 
 Users should eventually be able to install with:
@@ -95,7 +92,7 @@ hermes skills install <id-or-url>
 
 ## Important URLs
 
-- OpenClaw skill: `https://clawhub.ai/zeuslabsllc/theta-edgecloud-skill`
+- Hermes skill tap: `zeuslabsllc/theta-edgecloud-hermes-skill/skills/theta-edgecloud`
 - Theta EdgeCloud: `https://www.thetaedgecloud.com/`
 - Theta API key docs: `https://docs.thetatoken.org/docs/edgecloud-api-keys`
 - Theta Communications: `https://www.thetacommunications.com/`

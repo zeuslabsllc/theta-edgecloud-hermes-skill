@@ -11,6 +11,8 @@ hermes skills tap add zeuslabsllc/theta-edgecloud-hermes-skill
 hermes skills install zeuslabsllc/theta-edgecloud-hermes-skill/skills/theta-edgecloud
 ```
 
+In the Skills Hub UI, choose the Hermes/GitHub result named `theta-edgecloud` with identifier `zeuslabsllc/theta-edgecloud-hermes-skill/skills/theta-edgecloud`. Do not choose the legacy ClawHub result named `Theta EdgeCloud Skill`; that is a separate OpenClaw package and is not this Hermes distribution.
+
 To browse/search it after adding the tap:
 
 ```bash
@@ -107,9 +109,7 @@ hermes skills tap add zeuslabsllc/theta-edgecloud-hermes-skill
 hermes skills install zeuslabsllc/theta-edgecloud-hermes-skill/skills/theta-edgecloud
 ```
 
-The dashboard's **Skills -> Browse hub** page uses the same Skills Hub search as `hermes skills search`, so the skill appears there after the tap is added.
-
-ClawHub can also be used for cross-agent/OpenClaw distribution. Current Hermes CLI support for ClawHub publishing prints a manual-submit notice, so submit the release package manually at `https://clawhub.ai/submit` if ClawHub accepts this Hermes-targeted port.
+The dashboard's **Skills -> Browse hub** page uses the same Skills Hub search as `hermes skills search`. If multiple Theta results appear, install the result with Source `github` / `skills.sh`, not Source `clawhub`.
 
 To preview only the root `SKILL.md` metadata through Hermes:
 
