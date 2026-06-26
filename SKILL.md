@@ -1,6 +1,6 @@
 ---
 name: theta-edgecloud
-description: Theta EdgeCloud Skill for Hermes: use Theta EdgeCloud for cost-conscious LLM, on-demand media/inference, dedicated OpenAI-compatible endpoints, GPU/deployment checks, and Theta Video workflows with command-scoped credentials and dry-run safety.
+description: "Theta EdgeCloud Skill for Hermes: use Theta EdgeCloud for cost-conscious LLM, on-demand media/inference, dedicated OpenAI-compatible endpoints, GPU/deployment checks, and Theta Video workflows with command-scoped credentials and dry-run safety."
 version: 0.2.1
 author: Zeus Labs / Theta Communications
 license: MIT
