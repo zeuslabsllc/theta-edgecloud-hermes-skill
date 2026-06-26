@@ -11,6 +11,8 @@ hermes skills tap add zeuslabsllc/theta-edgecloud-hermes-skill
 hermes skills install zeuslabsllc/theta-edgecloud-hermes-skill/skills/theta-edgecloud
 ```
 
+Note: the public skills.sh detail page is not live yet. URLs such as `https://skills.sh/zeuslabsllc/theta-edgecloud-hermes-skill/skills/theta-edgecloud` currently return `404` because skills.sh has not indexed this repository as a public detail page. Use the Hermes GitHub tap commands above as the supported install path.
+
 In the Skills Hub UI, choose the Hermes/GitHub result named `theta-edgecloud-hermes` with identifier `zeuslabsllc/theta-edgecloud-hermes-skill/skills/theta-edgecloud`. Do not choose the legacy ClawHub result named `Theta EdgeCloud Skill`; that is a separate OpenClaw package and is not this Hermes distribution.
 
 To browse/search it after adding the tap:
