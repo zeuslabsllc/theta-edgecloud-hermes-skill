@@ -71,7 +71,7 @@
 - [x] Add direct-helper GLM-5.2 examples and thinking/sampling controls.
 - [x] Add official MCP `infer` payload guidance for GLM-5.2.
 - [x] Add GLM-5.2 dry-run smoke coverage.
-- [ ] Run one low-token authenticated GLM-5.2 inference and record response shape, latency, usage, and cost before tagging the release.
+- [x] Run low-token authenticated GLM-5.2 inference with thinking on/off; record nested response shape, latency, usage, cost, and the empty-final-message behavior when thinking exhausts a 256-token ceiling.
 
 ## Ongoing maintenance
 

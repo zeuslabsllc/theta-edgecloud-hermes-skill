@@ -35,7 +35,7 @@ python scripts/theta_edgecloud.py ondemand-chat \
   --enable-thinking
 ```
 
-The public catalog exposes the model as `glm-5.2` behind the `glm_5_2` service alias. Re-run service discovery before production use to confirm current capacity and pricing.
+The public catalog exposes the model as `glm-5.2` behind the `glm_5_2` service alias. Re-run service discovery before production use to confirm current capacity and pricing. In live validation, thinking mode consumed an entire 256-token output ceiling without emitting a final message, so use a larger `max_tokens` value such as the 1024-token example above when `enable_thinking` is true.
 
 ## Official MCP: `gpt_oss_120b`
 

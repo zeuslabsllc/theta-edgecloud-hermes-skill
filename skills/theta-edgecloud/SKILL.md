@@ -167,6 +167,13 @@ GLM-5.2 notes:
 - `enable_thinking` defaults to `false` in the live catalog; enable it for complex coding/research tasks when added latency and output tokens are acceptable.
 - Run `ondemand-list-services` before relying on availability, pricing, or worker capacity because the live catalog is authoritative.
 
+Authenticated validation on 2026-08-06 UTC confirmed the direct helper's end-to-end GLM-5.2 path:
+
+- Thinking disabled: success in `4.952s`, `52` input tokens and `207` output tokens, with a non-empty `output.message` and reported cost `USD 0.00257972`.
+- Thinking enabled with only `max_tokens: 256`: success in `6.109s`, `58` input tokens and exactly `256` output tokens, but `output.message` was empty. This indicates the token ceiling can be consumed before a final answer is emitted; use a larger output budget for thinking mode and keep cost controls in place.
+- Theta returned generic on-demand results under `body.infer_requests[0].output.message`; the helper now extracts this nested response shape in normal text mode.
+- The two validation calls together reported `USD 0.00515944`, well below the approved `USD 1` ceiling.
+
 Qwen3 notes:
 
 - Canonical slug: `qwen3`

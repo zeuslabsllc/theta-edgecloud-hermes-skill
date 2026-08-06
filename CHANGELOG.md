@@ -7,6 +7,8 @@
 - Updated direct on-demand chat requests to send `stream: false` for reliable JSON responses.
 - Preserved non-secret token limits and usage counters in redacted output while continuing to hide credential-bearing token fields.
 - Live-checked Theta's public service catalog: GLM-5.2 is public under model id `glm-5.2`, uses the `completions` prediction, exposes thinking/sampling controls, and had a live default worker.
+- Live-validated authenticated GLM-5.2 inference with thinking on/off for a combined reported cost of `USD 0.00515944`; documented latency, usage, nested response shape, and the empty-message result when thinking consumed a 256-token ceiling.
+- Updated normal text output parsing for Theta's generic `body.infer_requests[0].output.message` response shape.
 - Recorded Theta's 2026-08-05 launch article and the model's MIT license, 1M-token context, and long-horizon coding/agentic positioning.
 
 ## 0.2.1 - 2026-06-23

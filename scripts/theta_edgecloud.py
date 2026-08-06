@@ -327,6 +327,16 @@ def parse_chat_text(data: Any) -> str:
             for key in ("message", "text", "content"):
                 if out.get(key):
                     return str(out[key])
+        body = data.get("body")
+        if isinstance(body, dict):
+            requests = body.get("infer_requests")
+            if isinstance(requests, list) and requests:
+                request = requests[0] if isinstance(requests[0], dict) else None
+                nested_out = request.get("output") if request else None
+                if isinstance(nested_out, dict):
+                    for key in ("message", "text", "content"):
+                        if nested_out.get(key):
+                            return str(nested_out[key])
     return json.dumps(data, indent=2)
 
 

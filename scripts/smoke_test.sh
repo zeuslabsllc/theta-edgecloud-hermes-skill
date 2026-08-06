@@ -128,7 +128,16 @@ for leaked in ['supersecret', 'regsecret', 'toksecret', 'validatorsecret', 'shou
     if leaked in redacted:
         raise SystemExit(f'secret leaked in dry-run output: {leaked}')
 
-from scripts.theta_edgecloud import redact, redact_text_value
+from scripts.theta_edgecloud import parse_chat_text, redact, redact_text_value
+glm_nested = {
+    'body': {
+        'infer_requests': [
+            {'output': {'message': 'GLM nested response OK'}}
+        ]
+    }
+}
+if parse_chat_text(glm_nested) != 'GLM nested response OK':
+    raise SystemExit('failed to parse nested GLM on-demand response text')
 sample = {
     'upload_url': 'https://uploads.example/path?token=urlsecret&ok=1',
     'source_uri': 'https://cdn.example/video.mp4?X-Amz-Signature=sigsecret&public=ok',
