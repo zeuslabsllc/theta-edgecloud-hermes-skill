@@ -41,6 +41,7 @@ Installing a raw `SKILL.md` URL is useful for previewing skill metadata, but it 
 python scripts/theta_edgecloud.py setup
 python scripts/theta_edgecloud.py capabilities
 python scripts/theta_edgecloud.py ondemand-list-services
+python scripts/theta_edgecloud.py ondemand-chat --service glm_5_2 --message "Plan a safe refactor" --max-tokens 512 --enable-thinking
 python scripts/theta_edgecloud.py ondemand-chat --service gpt_oss_120b --message "Say hello"
 python scripts/theta_edgecloud.py ondemand-infer --service stable_diffusion_xl_turbo --prediction predict --payload-json '{"input":{"prompt":"blue edge-cloud icon","steps":2,"strength":0.7,"guidance":0}}' --poll
 python scripts/theta_edgecloud.py controller-vm-types

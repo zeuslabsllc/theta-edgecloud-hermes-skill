@@ -66,6 +66,7 @@ This skill includes `scripts/theta_edgecloud.py`, a dependency-free Python helpe
 python scripts/theta_edgecloud.py setup
 python scripts/theta_edgecloud.py capabilities
 python scripts/theta_edgecloud.py ondemand-list-services
+python scripts/theta_edgecloud.py ondemand-chat --service glm_5_2 --message "Plan a safe refactor" --max-tokens 512 --enable-thinking
 python scripts/theta_edgecloud.py ondemand-chat --service qwen3 --message "Say hello"
 python scripts/theta_edgecloud.py ondemand-chat --service gpt_oss_120b --message "Say hello"
 python scripts/theta_edgecloud.py ondemand-infer --service stable_diffusion_xl_turbo --prediction predict --payload-json '{"input":{"prompt":"blue edge-cloud icon","steps":2,"strength":0.7,"guidance":0}}' --poll
@@ -130,7 +131,7 @@ Supporting files:
 
 - `references/hermes-theta-official-mcp-config.yaml` — copy/paste Hermes config example.
 - `references/official-theta-mcp-hermes-setup.md` — full setup and troubleshooting notes.
-- `references/structured-examples.md` — copy/paste examples for `gpt_oss_120b`, `qwen3`, image/audio/video, LLaVA, and dedicated validators.
+- `references/structured-examples.md` — copy/paste examples for `glm_5_2`, `gpt_oss_120b`, `qwen3`, image/audio/video, LLaVA, and dedicated validators.
 - `scripts/validate_official_mcp.sh` — checks Node/npm/package metadata.
 - `scripts/test_official_mcp_hermes.sh` — verifies Hermes can discover the 4 official MCP tools in a temporary profile.
 
@@ -143,11 +144,28 @@ Live validation on 2026-06-09 confirmed:
 - `stable_diffusion_xl_turbo` image generation succeeded through generic `ondemand-infer`; a 2-step test returned an `image_url` and reported `cost_usd.output = 0.01`.
 - `qwen3` returned `409 No instances available - try again later` during multiple live tests, so treat it as capacity-sensitive and retry later rather than marking credentials invalid.
 
+Public catalog validation on 2026-08-05 confirmed Theta's newly announced GLM-5.2 service:
+
+- Canonical on-demand alias: `glm_5_2`; model id: `glm-5.2`.
+- Request family: `completions` through `POST /infer_request/glm_5_2?prediction=completions`.
+- Supported catalog inputs: `messages`, `max_tokens`, `temperature`, `top_p`, `stream`, and `enable_thinking`.
+- The service was public with a live default worker and template id `img_hizq6ddeft6c6ep6qmd347xe4mr8`.
+- Theta's announcement describes GLM-5.2 as Z.ai's MIT-licensed flagship for coding, research, debugging, and other long-horizon agentic work, with a 1M-token context window. Source: `https://medium.com/theta-network/glm-5-2-lands-on-theta-edgecloud-a-frontier-grade-mit-licensed-model-on-open-infrastructure-eb40106019b3`.
+- The helper sends `stream: false` for reliable JSON handling and exposes optional `--max-tokens`, `--temperature`, `--top-p`, and `--enable-thinking` / `--disable-thinking` controls.
+
 Validated aliases from the OpenClaw skill include:
 
-- Chat/LLM: `qwen3`, `gpt_oss_120b`, `llama_3_1_70b`
+- Chat/LLM: `glm_5_2`, `qwen3`, `gpt_oss_120b`, `llama_3_1_70b`
 - Image/vision/audio: `flux`, `stable_diffusion_xl_turbo`, `grounding_dino`, `blip`, `llava`, `whisper`
 - Catalog-only/stale in the source skill: `minimax_m2_5`, `llama_3_8b`, `step_video`, `esrgan`, `voice_cloning`, `instant_id`, `talking_head`
+
+GLM-5.2 notes:
+
+- Canonical slug: `glm_5_2` (underscore-separated); catalog model id: `glm-5.2`.
+- Use generic on-demand completions or the official MCP `infer` tool with `service: "glm_5_2"`.
+- Set `stream: false` when a caller expects one JSON response instead of SSE.
+- `enable_thinking` defaults to `false` in the live catalog; enable it for complex coding/research tasks when added latency and output tokens are acceptable.
+- Run `ondemand-list-services` before relying on availability, pricing, or worker capacity because the live catalog is authoritative.
 
 Qwen3 notes:
 

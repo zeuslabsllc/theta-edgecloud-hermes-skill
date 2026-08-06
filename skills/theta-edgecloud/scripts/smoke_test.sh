@@ -13,6 +13,15 @@ THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py ondemand-chat \
   --message 'Hermes Theta EdgeCloud smoke test' \
   --json >/tmp/theta_edgecloud_ondemand_dry_run.json
 
+THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py ondemand-chat \
+  --service glm_5_2 \
+  --message 'Hermes Theta EdgeCloud GLM-5.2 smoke test' \
+  --max-tokens 128 \
+  --temperature 0.3 \
+  --top-p 0.7 \
+  --enable-thinking \
+  --json >/tmp/theta_edgecloud_glm_5_2_dry_run.json
+
 THETA_DRY_RUN=1 python3 scripts/theta_edgecloud.py dedicated-chat \
   --model default \
   --message 'Hermes Theta EdgeCloud dedicated smoke test' \
@@ -82,6 +91,7 @@ from pathlib import Path
 for path in [
     '/tmp/theta_edgecloud_capabilities.json',
     '/tmp/theta_edgecloud_ondemand_dry_run.json',
+    '/tmp/theta_edgecloud_glm_5_2_dry_run.json',
     '/tmp/theta_edgecloud_dedicated_dry_run.json',
     '/tmp/theta_edgecloud_ondemand_infer_dry_run.json',
     '/tmp/theta_edgecloud_upload_url_dry_run.json',
@@ -95,6 +105,20 @@ for path in [
     '/tmp/theta_ingestor_select_dry_run.json',
 ]:
     json.loads(Path(path).read_text())
+glm = json.loads(Path('/tmp/theta_edgecloud_glm_5_2_dry_run.json').read_text())
+if glm.get('service') != 'glm_5_2':
+    raise SystemExit('GLM-5.2 dry-run did not preserve canonical service alias')
+glm_input = glm.get('payload', {}).get('input', {})
+expected_glm = {
+    'stream': False,
+    'max_tokens': 128,
+    'temperature': 0.3,
+    'top_p': 0.7,
+    'enable_thinking': True,
+}
+for key, value in expected_glm.items():
+    if glm_input.get(key) != value:
+        raise SystemExit(f'GLM-5.2 dry-run payload mismatch for {key}: {glm_input.get(key)!r}')
 redacted = ''.join(Path(path).read_text() for path in [
     '/tmp/theta_create_redacted.json',
     '/tmp/theta_disposable_validate_dry_run.json',

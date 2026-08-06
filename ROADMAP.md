@@ -64,6 +64,15 @@
 - [ ] Add tests for secret redaction and dry-run behavior.
 - [ ] Submit/distribute as public Hermes plugin if appropriate.
 
+## Next release: GLM-5.2 on-demand support
+
+- [x] Review Theta's 2026-08-05 GLM-5.2 announcement.
+- [x] Confirm the live public service alias (`glm_5_2`), model id (`glm-5.2`), completions route, input fields, template, and worker availability through Theta service discovery.
+- [x] Add direct-helper GLM-5.2 examples and thinking/sampling controls.
+- [x] Add official MCP `infer` payload guidance for GLM-5.2.
+- [x] Add GLM-5.2 dry-run smoke coverage.
+- [ ] Run one low-token authenticated GLM-5.2 inference and record response shape, latency, usage, and cost before tagging the release.
+
 ## Ongoing maintenance
 
 - [ ] Monthly security review.

@@ -2,6 +2,41 @@
 
 These examples are safe templates. Replace IDs, URLs, and credentials with your own values. Use `THETA_DRY_RUN=1` before paid or mutating operations.
 
+## Official MCP: `glm_5_2` (GLM-5.2)
+
+Theta's canonical on-demand service alias uses underscores: `glm_5_2`. Use `stream: false` for a single JSON response. Thinking mode is optional and is best reserved for complex coding, research, optimization, and debugging tasks.
+
+```json
+{
+  "service": "glm_5_2",
+  "input": {
+    "messages": [
+      {"role": "user", "content": "Review this migration plan and identify the three highest-risk assumptions."}
+    ],
+    "max_tokens": 1024,
+    "temperature": 0.3,
+    "top_p": 0.7,
+    "enable_thinking": true,
+    "stream": false
+  },
+  "wait": 60
+}
+```
+
+Equivalent direct-helper command:
+
+```bash
+python scripts/theta_edgecloud.py ondemand-chat \
+  --service glm_5_2 \
+  --message "Review this migration plan and identify the three highest-risk assumptions." \
+  --max-tokens 1024 \
+  --temperature 0.3 \
+  --top-p 0.7 \
+  --enable-thinking
+```
+
+The public catalog exposes the model as `glm-5.2` behind the `glm_5_2` service alias. Re-run service discovery before production use to confirm current capacity and pricing.
+
 ## Official MCP: `gpt_oss_120b`
 
 Use `stream: false` inside `input` so the official MCP server receives JSON instead of SSE chunks.

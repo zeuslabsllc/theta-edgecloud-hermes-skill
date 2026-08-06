@@ -2,7 +2,12 @@
 
 ## Unreleased
 
-- No unreleased changes yet.
+- Added Theta EdgeCloud GLM-5.2 on-demand guidance using the canonical `glm_5_2` service alias.
+- Added official MCP and direct-helper GLM-5.2 examples with optional thinking, token-limit, temperature, and top-p controls.
+- Updated direct on-demand chat requests to send `stream: false` for reliable JSON responses.
+- Preserved non-secret token limits and usage counters in redacted output while continuing to hide credential-bearing token fields.
+- Live-checked Theta's public service catalog: GLM-5.2 is public under model id `glm-5.2`, uses the `completions` prediction, exposes thinking/sampling controls, and had a live default worker.
+- Recorded Theta's 2026-08-05 launch article and the model's MIT license, 1M-token context, and long-horizon coding/agentic positioning.
 
 ## 0.2.1 - 2026-06-23
 

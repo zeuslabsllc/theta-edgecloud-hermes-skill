@@ -50,6 +50,18 @@ SENSITIVE_KEY_PARTS = (
     "upload_uri",
 )
 
+# Token counts and limits are usage metadata, not credentials. Keep them visible
+# while still redacting credential keys such as access_token and api_token.
+NON_SECRET_TOKEN_KEYS = {
+    "completion_tokens",
+    "input_tokens",
+    "max_completion_tokens",
+    "max_tokens",
+    "output_tokens",
+    "prompt_tokens",
+    "total_tokens",
+}
+
 SECRET_ENV_NAMES = (
     "THETA_EC_API_KEY",
     "THETA_ONDEMAND_API_TOKEN",
@@ -96,6 +108,8 @@ def ondemand_token() -> Optional[str]:
 
 def is_sensitive_key(key: str) -> bool:
     normalized = key.lower().replace("-", "_")
+    if normalized in NON_SECRET_TOKEN_KEYS:
+        return False
     return any(part in normalized for part in SENSITIVE_KEY_PARTS)
 
 
@@ -317,20 +331,30 @@ def parse_chat_text(data: Any) -> str:
 
 
 def ondemand_chat(args: argparse.Namespace) -> int:
+    messages = [{"role": "user", "content": args.message}]
+    chat_input: Dict[str, Any] = {"messages": messages, "stream": False}
+    if args.max_tokens is not None:
+        chat_input["max_tokens"] = args.max_tokens
+    if args.temperature is not None:
+        chat_input["temperature"] = args.temperature
+    if args.top_p is not None:
+        chat_input["top_p"] = args.top_p
+    if args.enable_thinking is not None:
+        chat_input["enable_thinking"] = args.enable_thinking
+
     if env("THETA_DRY_RUN") == "1" or args.dry_run:
         json_out(
             {
                 "dry_run": True,
                 "service": args.service,
-                "message": args.message,
+                "payload": {"input": chat_input},
                 "would_call": "Theta on-demand chat",
             }
         )
         return 0
     headers = ondemand_headers(require=True)
-    messages = [{"role": "user", "content": args.message}]
     if args.service == "gpt_oss_120b":
-        payload = {"model": "gpt_oss_120b", "messages": messages, "stream": False}
+        payload = {"model": "gpt_oss_120b", **chat_input}
         data = request_json(
             "POST",
             f"{ONDEMAND_BASE}/infer_request/chat/completions",
@@ -339,7 +363,7 @@ def ondemand_chat(args: argparse.Namespace) -> int:
             timeout=args.timeout,
         )
     else:
-        payload = {"input": {"messages": messages}}
+        payload = {"input": chat_input}
         if args.variant:
             payload["variant"] = args.variant
         url = f"{ONDEMAND_BASE}/infer_request/{urllib.parse.quote(args.service)}?prediction=completions"
@@ -1239,6 +1263,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--service", default="qwen3")
     s.add_argument("--variant")
     s.add_argument("--message", required=True)
+    s.add_argument("--max-tokens", type=int)
+    s.add_argument("--temperature", type=float)
+    s.add_argument("--top-p", type=float)
+    thinking = s.add_mutually_exclusive_group()
+    thinking.add_argument("--enable-thinking", dest="enable_thinking", action="store_true")
+    thinking.add_argument("--disable-thinking", dest="enable_thinking", action="store_false")
+    s.set_defaults(enable_thinking=None)
     s.add_argument("--timeout", type=int, default=120)
     s.add_argument("--dry-run", action="store_true")
     s.add_argument("--json", action="store_true")
